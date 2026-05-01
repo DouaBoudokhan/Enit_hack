@@ -1,11 +1,11 @@
 # Python
-__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
-.venv/
-venv/
-ENV/
-env/
+/.venv/
+/venv/
+/ENV/
+/env/
 .env
 .env.local
 .env.*
