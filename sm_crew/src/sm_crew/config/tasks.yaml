@@ -1,0 +1,21 @@
+analyze_post_task:
+  description: >
+    Examinez la publication de {influencer_name} ayant pour légende : "{post_caption}".
+    Voici les commentaires sous cette publication :
+    {comments_data}
+    
+    Votre tâche consiste à analyser ces commentaires en dialecte tunisien. Détectez le sentiment spécifique à ce post (positif, négatif, indifférent) et évaluez la qualité de la conversation (constructif, spam, conflit).
+  expected_output: >
+    Un court résumé (1 à 2 paragraphes) détaillant le sentiment principal et la qualité des échanges pour cette publication spécifique.
+  agent: post_analyst
+
+aggregate_report_task:
+  description: >
+    Voici les résumés d'analyse de plusieurs publications de l'influenceur {influencer_name} :
+    {post_summaries}
+    
+    En vous basant sur ces résumés, créez un rapport final complet qui répond à la problématique : 
+    "Quel est le sentiment global de la communauté (positif, négatif, indifférent) et quelle est la qualité générale de la conversation autour de {influencer_name} ?"
+  expected_output: >
+    Un rapport global et structuré au format Markdown, rédigé en français. Il doit synthétiser l'humeur générale de la communauté, la qualité globale des échanges sur l'ensemble de ses posts, et formuler des recommandations stratégiques. Ne mettez pas de balises markdown englobantes comme '```'.
+  agent: influencer_analyst

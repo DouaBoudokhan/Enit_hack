@@ -1,0 +1,24 @@
+analyze_post_task:
+  description: >
+    CONTEXTE : Vous évaluez l'engagement d'une publication de {influencer_name} dont la légende est : "{post_caption}".
+    DONNÉES : 
+    {comments_data}
+    
+    OBJECTIFS D'ANALYSE :
+    1. Sentiment : Catégorisez l'humeur globale en pourcentages stricts (Positif, Négatif, Indifférent).
+    2. Qualité de conversation : Attribuez une note sur 10.
+       (1-3 = Spam/Toxique/Superficiel ; 4-6 = Neutre/Basique ; 7-10 = Constructif/Débat sain/Soutien argumenté).
+    
+    RÈGLES STRICTES :
+    - La somme des pourcentages DOIT être égale à 100%.
+    - Prenez en compte le sarcasme tunisien qui peut paraître négatif mais est en réalité positif (ou inversement).
+    - Ignorez les commentaires hors-sujet dans le calcul de la qualité.
+  expected_output: >
+    Un bloc structuré exactement comme suit :
+    
+    ### Analyse du Post
+    **Sentiment :** Positif: X% | Négatif: Y% | Indifférent: Z%
+    **Qualité de la Conversation :** N/10
+    **Justification (3 phrases max) :** [Explication analytique s'appuyant sur les expressions utilisées]
+    **Thèmes dominants :** [Mots-clés ou sujets récurrents]
+  agent: post_analyst

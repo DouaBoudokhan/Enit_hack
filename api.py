@@ -189,6 +189,25 @@ def list_posts():
             })
     return posts
 
+@app.get("/api/analyzed-posts")
+def list_analyzed_posts():
+    """Return all pre-analyzed post results from sm_crew/post_analysis"""
+    import glob
+    analysis_dir = BASE_DIR / "sm_crew" / "post_analysis"
+    results = []
+    
+    if analysis_dir.exists():
+        for file_path in analysis_dir.glob("*/*.json"):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    results.append(data)
+            except Exception as e:
+                logger.error(f"Failed to read {file_path}: {e}")
+                
+    return sorted(results, key=lambda x: (x.get("influencer", ""), x.get("post_index", 0)))
+
+
 
 @app.post("/api/analyze-post")
 async def analyze_post(req: PostAnalysisRequest):
@@ -218,6 +237,7 @@ async def analyze_post(req: PostAnalysisRequest):
                     "post_id": post.get("post_id"),
                     "post_url": post.get("post_url"),
                     "media_type": post.get("media_type"),
+                    "display_url": post.get("display_url"),
                     "enriched_content": post.get("enriched_content"),
                     "likes_count": post.get("likes_count"),
                     "comments_count": post.get("comments_count"),

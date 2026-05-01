@@ -5,9 +5,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "./layouts/AppLayout";
 import SmartSearch from "./pages/SmartSearch";
+import PreAnalyzedPosts from "./pages/PreAnalyzedPosts";
 import AnalyzePost from "./pages/AnalyzePost";
 import PasteUrl from "./pages/PasteUrl";
 import ProductMatch from "./pages/ProductMatch";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -21,9 +23,11 @@ const App = () => (
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<SmartSearch />} />
+            <Route path="/analyzed-posts" element={<PreAnalyzedPosts />} />
             <Route path="/analyze-post" element={<AnalyzePost />} />
             <Route path="/paste-url" element={<PasteUrl />} />
             <Route path="/product-match" element={<ProductMatch />} />
+            <Route path="/reports" element={<Reports />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,0 +1,25 @@
+[project]
+name = "sm_crew"
+version = "0.1.0"
+description = "sm_crew using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "crewai[tools]>=0.121.0,<1.0.0",
+    "fastapi>=0.136.1",
+    "uvicorn>=0.46.0",
+]
+
+[project.scripts]
+sm_crew = "sm_crew.main:run"
+run_crew = "sm_crew.main:run"
+train = "sm_crew.main:train"
+replay = "sm_crew.main:replay"
+test = "sm_crew.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"

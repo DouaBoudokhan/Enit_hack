@@ -1,0 +1,30 @@
+aggregate_report_task:
+  description: >
+    DONNÉES D'ENTRÉE : Résumés d'analyse des publications de {influencer_name} :
+    {post_summaries}
+    
+    ÉTAPES DE RÉSOLUTION :
+    1. Extraction : Listez mentalement tous les pourcentages (Positif, Négatif, Indifférent) et les notes sur 10 de chaque post.
+    2. Calcul : Additionnez-les et divisez par le nombre total de posts pour obtenir des moyennes exactes.
+    3. Synthèse : Analysez les thèmes dominants et la tendance globale.
+    4. Recommandation : Proposez des actions concrètes pour l'influenceur.
+  expected_output: >
+    Rédigez un rapport Markdown professionnel structuré AINSI :
+    
+    # Audit d'Engagement : {influencer_name}
+    
+    ## 1. Scoring et Métriques Globales
+    - **Sentiment Moyen :** Positif: X% | Négatif: Y% | Indifférent: Z%
+    - **Qualité Moyenne de la Conversation :** N/10
+    
+    ## 2. Synthèse de l'Audience
+    [Un paragraphe sur l'état d'esprit de la communauté, son comportement et sa fidélité]
+    
+    ## 3. Dynamiques et Thèmes Récurrents
+    [Analyse qualitative des sujets, du dialecte utilisé, des zones de frictions ou d'engouement]
+    
+    ## 4. Recommandations Stratégiques
+    [2 à 3 actions concrètes pour améliorer l'engagement ou apaiser la communauté]
+    
+    Important : Ne pas utiliser de balises markdown englobantes comme '```'.
+  agent: influencer_analyst

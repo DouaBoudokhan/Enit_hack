@@ -3,7 +3,7 @@ import { Card, CardHeader } from "@/components/Card";
 import { Pill } from "@/components/Pill";
 import { AnimatedBar, StackedBar } from "@/components/Bars";
 import { CountNumber } from "@/components/CountNumber";
-import { Link2, MessageSquare, Heart, Eye, Sparkles } from "lucide-react";
+import { Link2, MessageSquare, Heart, Eye, Sparkles, Send, Bookmark, MoreHorizontal, CheckCircle2 } from "lucide-react";
 
 import { useExport } from "@/context/ExportContext";
 
@@ -25,6 +25,7 @@ interface PostAnalysis {
     post_id: string;
     post_url: string;
     media_type: string;
+    display_url?: string;
     enriched_content: string;
     likes_count: number;
     comments_count: number;
@@ -174,194 +175,225 @@ export default function AnalyzePost() {
 
       {/* Results */}
       {r && !loading && (
-        <div className="mt-8 flex flex-col gap-4 animate-fade-in">
+        <div className="mt-8 flex flex-col lg:flex-row gap-8 items-start animate-fade-in">
 
-          {/* Post info card */}
+          {/* LEFT: INSTAGRAM CLONE POST */}
           {r.post && (
-            <Card>
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Pill
-                      tone={r.post.media_type === "video" ? "purple" : "blue"}
-                      size="sm"
-                    >
-                      {r.post.media_type === "video" ? "REEL" : "IMAGE"}
-                    </Pill>
-                    <Pill size="sm">{r.content_type}</Pill>
-                    {r.vision_used && (
-                      <Pill tone="teal" size="sm" className="bg-teal/10">
-                        <Sparkles size={10} className="mr-1" /> Vision AI
-                      </Pill>
-                    )}
-                  </div>
-                  <div className="text-[15px] font-medium text-ink mb-1">
-                    {r.influencer?.name || "Unknown"}
-                    <span className="text-ink-muted font-normal ml-1.5">
-                      @{r.influencer?.handle || "unknown"}
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-ink-secondary leading-relaxed max-w-2xl">
-                    {r.post.enriched_content}
-                  </p>
-                </div>
-              </div>
-
-              {/* Stats row */}
-              <div className="flex items-center gap-6 mt-4 text-[13px] text-ink-secondary">
-                <span className="flex items-center gap-1.5">
-                  <Heart size={14} className="text-coral" /> {(r.post.likes_count ?? 0).toLocaleString()} likes
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <MessageSquare size={14} className="text-blue" /> {(r.post.comments_count ?? 0).toLocaleString()} comments
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Eye size={14} className="text-ink-muted" /> {r.sentiment?.total_comments ?? 0} analyzed
-                </span>
-              </div>
-            </Card>
-          )}
-
-          {/* Sentiment breakdown */}
-          {r.sentiment && (
-            <Card noPadding>
-              <CardHeader
-                title="Comment sentiment analysis"
-                subtitle={`Analyzing ${r.sentiment.total_comments} comments on this ${r.post?.media_type === "video" ? "reel" : "post"}`}
-              />
-              <div className="p-5">
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-teal))" }}>
-                    <div className="text-[28px] metric-num text-teal">
-                      <CountNumber value={r.sentiment.positive} suffix="%" />
-                    </div>
-                    <div className="text-[12px] text-ink-secondary mt-1">Positive</div>
-                  </div>
-                  <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-amber))" }}>
-                    <div className="text-[28px] metric-num text-amber">
-                      <CountNumber value={r.sentiment.neutral} suffix="%" />
-                    </div>
-                    <div className="text-[12px] text-ink-secondary mt-1">Neutral</div>
-                  </div>
-                  <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-coral))" }}>
-                    <div className="text-[28px] metric-num text-coral">
-                      <CountNumber value={r.sentiment.negative} suffix="%" />
-                    </div>
-                    <div className="text-[12px] text-ink-secondary mt-1">Negative</div>
-                  </div>
-                </div>
-                <StackedBar
-                  segments={[
-                    { pct: r.sentiment.positive, color: "hsl(var(--accent-teal))" },
-                    { pct: r.sentiment.neutral, color: "hsl(var(--accent-amber))" },
-                    { pct: r.sentiment.negative, color: "hsl(var(--accent-coral))" },
-                  ]}
-                />
-
-                {/* Quality metrics */}
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div className="bg-background rounded-[10px] p-3">
-                    <div className="text-[11px] text-ink-muted">Avg quality score</div>
-                    <div className="text-[18px] font-semibold text-ink mt-0.5">
-                      {r.sentiment.avg_quality} / 10
-                    </div>
-                  </div>
-                  <div className="bg-background rounded-[10px] p-3">
-                    <div className="text-[11px] text-ink-muted">Toxicity rate</div>
-                    <div className="text-[18px] font-semibold text-ink mt-0.5">
-                      {r.sentiment.toxicity_rate}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Context insight */}
-          {r.context_insight && (
-            <Card noPadding>
-              <CardHeader title="Why this sentiment?" />
-              <div className="p-5">
-                <div className="flex items-start gap-3 bg-primary/5 border border-primary/10 rounded-[10px] p-4">
-                  <Sparkles size={18} className="text-primary mt-0.5 shrink-0" />
-                  <p className="text-[13px] text-ink-secondary leading-relaxed">
-                    {r.context_insight}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Language breakdown */}
-          {r.language_breakdown && r.language_breakdown.length > 0 && (
-            <Card noPadding>
-              <CardHeader title="Comment languages" />
-              <div className="p-5 flex flex-col gap-3">
-                {r.language_breakdown.map((l, i) => (
-                  <div key={l.language} className="flex items-center gap-4">
-                    <div className="w-20 shrink-0 text-[13px] text-ink-secondary">
-                      {l.language}
-                    </div>
-                    <div className="flex-1">
-                      <AnimatedBar
-                        pct={l.percentage}
-                        color="hsl(var(--accent-purple))"
-                        opacity={1 - i * 0.15}
-                        delay={i * 80}
+            <div className="w-full lg:w-[400px] shrink-0 bg-white border border-line-strong/30 rounded-[12px] overflow-hidden sticky top-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-[#121212] dark:border-white/10">
+              {/* Post Header */}
+              <div className="flex items-center justify-between p-3 border-b border-line dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-[34px] h-[34px] rounded-full bg-gradient-to-tr from-amber-400 via-coral to-purple-500 p-[2px]">
+                    <div className="w-full h-full rounded-full border-[2px] border-white dark:border-[#121212] overflow-hidden bg-surface">
+                      <img 
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${r.influencer?.handle}`} 
+                        alt="avatar" 
+                        className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="w-16 text-right text-[13px] text-ink-secondary tabular-nums">
-                      {l.percentage}% ({l.count})
-                    </div>
                   </div>
-                ))}
+                  <div className="flex flex-col">
+                    <span className="text-[13.5px] font-semibold text-ink leading-tight flex items-center gap-1">
+                      {r.influencer?.handle || "unknown"}
+                    </span>
+                    {r.vision_used && (
+                      <span className="text-[11px] text-ink-muted flex items-center gap-1 mt-0.5">
+                        <Sparkles size={10} className="text-secondary" /> AI Simulated
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <MoreHorizontal size={20} className="text-ink-muted" />
               </div>
-            </Card>
+
+              {/* Post Image/Video */}
+              <div className="bg-surface-input min-h-[300px] flex items-center justify-center relative">
+                {r.post.display_url ? (
+                  <img 
+                    src={`http://localhost:8000/api/proxy-image?url=${encodeURIComponent(r.post.display_url)}`}
+                    className="w-full h-auto object-cover max-h-[500px]" 
+                    alt="Post content" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://placehold.co/400x500/161b22/58a6ff?text=${r.post?.media_type}+Post\\n(Image+URL+Expired)`;
+                    }}
+                  />
+                ) : (
+                  <div className="text-sm text-ink-muted p-12 text-center">
+                    No visual available for {r.post.media_type || "post"}
+                  </div>
+                )}
+                {r.post.media_type === "video" && (
+                  <div className="absolute top-3 right-3 bg-black/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-md">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg> 
+                    REEL
+                  </div>
+                )}
+              </div>
+
+              {/* Post Actions */}
+              <div className="p-3.5">
+                <div className="flex items-center justify-between mb-3 text-ink">
+                  <div className="flex items-center gap-3.5">
+                    <Heart size={24} className="hover:opacity-50 cursor-pointer transition-opacity" />
+                    <MessageSquare size={24} className="hover:opacity-50 cursor-pointer transition-opacity" />
+                    <Send size={24} className="hover:opacity-50 cursor-pointer transition-opacity" />
+                  </div>
+                  <Bookmark size={24} className="hover:opacity-50 cursor-pointer transition-opacity" />
+                </div>
+                <div className="text-[13.5px] font-semibold text-ink mb-1.5">
+                  {(r.post.likes_count ?? 0).toLocaleString()} likes
+                </div>
+                <div className="text-[13.5px] text-ink leading-[1.4] mb-2.5">
+                  <span className="font-semibold mr-1.5">{r.influencer?.handle || "unknown"}</span>
+                  <span className="whitespace-pre-wrap">{r.post.enriched_content}</span>
+                </div>
+                <div className="text-[13.5px] text-ink-muted cursor-pointer hover:underline">
+                  View all {(r.post.comments_count ?? 0).toLocaleString()} comments
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* Individual comments */}
-          {r.comments && r.comments.length > 0 && (
-            <Card noPadding>
-              <CardHeader
-                title="Comment details"
-                subtitle="Each comment with sentiment, language, and quality score"
-              />
-              <div className="p-5 flex flex-col gap-2.5">
-                {r.comments.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`rounded-[10px] border p-3 ${sentimentBg(c.sentiment)}`}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] font-medium text-ink">
-                          @{c.ownerUsername}
-                        </span>
-                        <Pill size="sm" tone={c.sentiment === "positive" ? "teal" : c.sentiment === "negative" ? "neutral" : "neutral"}>
-                          {c.sentiment}
-                        </Pill>
-                        <span className="text-[10px] text-ink-muted px-1.5 py-0.5 bg-surface-input rounded">
-                          {c.language}
-                        </span>
-                        {c.toxicity_flag && (
-                          <span className="text-[10px] text-coral px-1.5 py-0.5 bg-coral/10 rounded border border-coral/20">
-                            ⚠ toxic
-                          </span>
-                        )}
+          {/* RIGHT: ANALYSIS COL */}
+          <div className="flex flex-col flex-1 gap-5 min-w-0">
+            {/* Quick summary card */}
+            <div className="bg-primary/5 border border-primary/20 rounded-[12px] p-5">
+               <div className="flex items-center gap-2 mb-3">
+                 <Sparkles className="text-primary w-5 h-5" />
+                 <h3 className="font-semibold text-ink text-[16px]">AI Comment Analysis</h3>
+               </div>
+               <p className="text-[14px] text-ink-secondary leading-relaxed">
+                 We analyzed <strong className="text-ink font-medium">{r.sentiment?.total_comments} comments</strong> on this {r.content_type?.toLowerCase() || 'post'}. 
+                 {r.context_insight && ` ${r.context_insight}`}
+               </p>
+            </div>
+
+            {/* Sentiment breakdown */}
+            {r.sentiment && (
+              <Card noPadding>
+                <CardHeader
+                  title="Sentiment Breakdown"
+                  subtitle="How the community feels about this content"
+                />
+                <div className="p-5">
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-teal))" }}>
+                      <div className="text-[28px] metric-num text-teal">
+                        <CountNumber value={r.sentiment.positive} suffix="%" />
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-ink-muted">
-                        <span>Quality: <strong className={sentimentColor(c.sentiment)}>{c.quality_score}/10</strong></span>
-                        <span>❤️ {c.likesCount}</span>
+                      <div className="text-[12px] text-ink-secondary mt-1">Positive</div>
+                    </div>
+                    <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-amber))" }}>
+                      <div className="text-[28px] metric-num text-amber">
+                        <CountNumber value={r.sentiment.neutral} suffix="%" />
+                      </div>
+                      <div className="text-[12px] text-ink-secondary mt-1">Neutral</div>
+                    </div>
+                    <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-coral))" }}>
+                      <div className="text-[28px] metric-num text-coral">
+                        <CountNumber value={r.sentiment.negative} suffix="%" />
+                      </div>
+                      <div className="text-[12px] text-ink-secondary mt-1">Negative</div>
+                    </div>
+                  </div>
+                  <StackedBar
+                    segments={[
+                      { pct: r.sentiment.positive, color: "hsl(var(--accent-teal))" },
+                      { pct: r.sentiment.neutral, color: "hsl(var(--accent-amber))" },
+                      { pct: r.sentiment.negative, color: "hsl(var(--accent-coral))" },
+                    ]}
+                  />
+
+                  {/* Quality metrics */}
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-background rounded-[10px] p-3">
+                      <div className="text-[11px] text-ink-muted">Avg quality score</div>
+                      <div className="text-[18px] font-semibold text-ink mt-0.5">
+                        {r.sentiment.avg_quality} / 10
                       </div>
                     </div>
-                    <p className="text-[13px] text-ink leading-relaxed" dir="auto">
-                      {c.text}
-                    </p>
+                    <div className="bg-background rounded-[10px] p-3">
+                      <div className="text-[11px] text-ink-muted">Toxicity rate</div>
+                      <div className="text-[18px] font-semibold text-ink mt-0.5">
+                        {r.sentiment.toxicity_rate}%
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
+                </div>
+              </Card>
+            )}
+
+            {/* Language breakdown */}
+            {r.language_breakdown && r.language_breakdown.length > 0 && (
+              <Card noPadding>
+                <CardHeader title="Audience Linguistics" subtitle="Languages spoken in the comment section" />
+                <div className="p-5 flex flex-col gap-3">
+                  {r.language_breakdown.map((l, i) => (
+                    <div key={l.language} className="flex items-center gap-4">
+                      <div className="w-24 shrink-0 text-[13px] font-medium text-ink">
+                        {l.language}
+                      </div>
+                      <div className="flex-1">
+                        <AnimatedBar
+                          pct={l.percentage}
+                          color="hsl(var(--accent-purple))"
+                          opacity={1 - i * 0.15}
+                          delay={i * 80}
+                        />
+                      </div>
+                      <div className="w-16 text-right text-[13px] text-ink-secondary tabular-nums">
+                        {l.percentage}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Individual comments */}
+            {r.comments && r.comments.length > 0 && (
+              <Card noPadding>
+                <CardHeader
+                  title="Notable Comments"
+                  subtitle="Sample comments with sentiment and quality scores"
+                />
+                <div className="p-5 flex flex-col gap-3">
+                  {r.comments.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`rounded-[10px] border p-4 ${sentimentBg(c.sentiment)}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-[13px] font-semibold text-ink">
+                            @{c.ownerUsername}
+                          </span>
+                          <Pill size="sm" tone={c.sentiment === "positive" ? "teal" : c.sentiment === "negative" ? "coral" : "neutral"}>
+                            {c.sentiment}
+                          </Pill>
+                          <span className="text-[11px] text-ink-muted px-1.5 py-0.5 bg-surface-input rounded border border-line">
+                            {c.language}
+                          </span>
+                          {c.toxicity_flag && (
+                            <span className="text-[11px] font-medium text-coral px-1.5 py-0.5 bg-coral/10 rounded border border-coral/20">
+                              ⚠ toxic
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-[12px] font-medium text-ink-muted">
+                          <span>Score: <strong className={sentimentColor(c.sentiment)}>{c.quality_score}/10</strong></span>
+                          <span className="flex items-center gap-1"><Heart size={12} /> {c.likesCount || 0}</span>
+                        </div>
+                      </div>
+                      <p className="text-[14px] text-ink leading-relaxed" dir="auto">
+                        {c.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
       )}
 
