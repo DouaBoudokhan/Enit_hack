@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "./layouts/AppLayout";
 import SmartSearch from "./pages/SmartSearch";
+import AnalyzePost from "./pages/AnalyzePost";
 import PasteUrl from "./pages/PasteUrl";
 import ProductMatch from "./pages/ProductMatch";
 import NotFound from "./pages/NotFound.tsx";
@@ -20,6 +21,7 @@ const App = () => (
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<SmartSearch />} />
+            <Route path="/analyze-post" element={<AnalyzePost />} />
             <Route path="/paste-url" element={<PasteUrl />} />
             <Route path="/product-match" element={<ProductMatch />} />
           </Route>

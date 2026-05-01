@@ -11,6 +11,8 @@ import yaml
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import AzureChatOpenAI
 
+from azure_config import normalize_azure_endpoint
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 CONFIG_DIR = BASE_DIR / "config"
 
@@ -19,7 +21,7 @@ def _get_llm() -> AzureChatOpenAI:
     """Create an AzureChatOpenAI instance from environment variables."""
     return AzureChatOpenAI(
         azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
-        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+        azure_endpoint=normalize_azure_endpoint(os.environ["AZURE_OPENAI_ENDPOINT"]),
         api_key=os.environ["AZURE_OPENAI_API_KEY"],
         api_version=os.environ["AZURE_OPENAI_API_VERSION"],
         temperature=0.2,

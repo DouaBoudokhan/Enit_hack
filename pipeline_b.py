@@ -12,6 +12,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
+from azure_config import normalize_azure_endpoint
+
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "data" / "influencers_scraped.json"
 DOMAINS_CACHE_FILE = BASE_DIR / "data" / "domains_cache.json"
@@ -20,7 +22,7 @@ DOMAINS_CACHE_FILE = BASE_DIR / "data" / "domains_cache.json"
 def _get_client() -> AzureOpenAI:
     """Create an AzureOpenAI client."""
     return AzureOpenAI(
-        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+        azure_endpoint=normalize_azure_endpoint(os.environ["AZURE_OPENAI_ENDPOINT"]),
         api_key=os.environ["AZURE_OPENAI_API_KEY"],
         api_version=os.environ["AZURE_OPENAI_API_VERSION"],
     )

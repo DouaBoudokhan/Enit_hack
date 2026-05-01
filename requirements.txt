@@ -7,3 +7,6 @@ python-dotenv
 requests
 Pillow
 pyyaml
+fastapi
+uvicorn[standard]
+playwright

@@ -12,6 +12,8 @@ from pathlib import Path
 import requests
 from openai import AzureOpenAI
 
+from azure_config import normalize_azure_endpoint
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_FILE = BASE_DIR / "data" / "influencers_scraped.json"
 
@@ -22,7 +24,7 @@ APIFY_POLL_INTERVAL = 5  # seconds
 def _get_azure_client() -> AzureOpenAI:
     """Return an AzureOpenAI client configured from environment variables."""
     return AzureOpenAI(
-        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+        azure_endpoint=normalize_azure_endpoint(os.environ["AZURE_OPENAI_ENDPOINT"]),
         api_key=os.environ["AZURE_OPENAI_API_KEY"],
         api_version=os.environ["AZURE_OPENAI_API_VERSION"],
     )

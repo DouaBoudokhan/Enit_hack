@@ -1,9 +1,10 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Search, Link2, Target, Clock } from "lucide-react";
+import { Search, Link2, Target, Clock, MessageSquare } from "lucide-react";
 import { recentSearches } from "@/data/demo";
 
 const navItems = [
   { to: "/", label: "Smart Search", icon: Search, end: true },
+  { to: "/analyze-post", label: "Analyze Post", icon: MessageSquare },
   { to: "/paste-url", label: "Paste URL", icon: Link2 },
   { to: "/product-match", label: "Product Match", icon: Target },
 ];
