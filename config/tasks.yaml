@@ -1,0 +1,9 @@
+tasks:
+  research_task:
+    description: Research the user provided topic and gather key points
+    expected_output: Bullet list of 5-7 key points with sources if available
+    agent: researcher
+  write_task:
+    description: Write a short summary based on the research
+    expected_output: A 2-3 paragraph summary
+    agent: writer
