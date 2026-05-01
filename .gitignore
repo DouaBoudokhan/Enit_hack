@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.local
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+dist/
+dist-ssr/
+*.log
+npm-debug.log*
+
+# OS / IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Data
+data/*.json
+!data/influencers_scraped.json
+!data/generate_db.py
