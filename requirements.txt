@@ -1,3 +1,9 @@
 crewai
+crewai-tools
+langchain-openai
+streamlit
+openai
 python-dotenv
+requests
+Pillow
 pyyaml
