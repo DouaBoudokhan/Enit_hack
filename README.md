@@ -32,6 +32,50 @@
 
 ---
 
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    subgraph "Frontend (React + Vite)"
+        UI["Modern Dashboard (Glassmorphism)"]
+        Voice["Voice Widget (Realtime Audio)"]
+        Matcher["Product Matcher (Vision/Text)"]
+        SSE_UI["Live Log Terminal"]
+    end
+
+    subgraph "Backend (FastAPI)"
+        API["FastAPI Orchestrator"]
+        SSE["SSE Log Broadcaster"]
+        S_Match["Strategic Match Engine"]
+    end
+
+    subgraph "AI Orchestration (CrewAI)"
+        Crew["OSINT Investigation Crew"]
+        Agent1["Research Agent (Search)"]
+        Agent2["Analysis Agent (Sentiment)"]
+    end
+
+    subgraph "External Intelligence"
+        Azure_R["Azure Realtime Voice"]
+        Azure_G["Azure GPT-5.4 Nano (LLM)"]
+        Groq["Groq Llama-4 (Vision)"]
+        Apify["Apify (Social Scrapers)"]
+    end
+
+    %% Connections
+    Voice <--> Azure_R
+    UI -- "API Requests" --> API
+    Matcher -- "Vision/Text" --> S_Match
+    S_Match -- "Analyze" --> Groq
+    API -- "Kickoff" --> Crew
+    Crew -- "Logs" --> SSE
+    SSE -- "Stream" --> SSE_UI
+    Agent1 -- "Web Scraping" --> Apify
+    Agent2 -- "Chat Completion" --> Azure_G
+```
+
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend
