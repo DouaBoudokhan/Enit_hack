@@ -110,7 +110,7 @@ The platform features a **Premium Dark Aesthetic** with "Glassmorphism" elements
 
 ## 🏆 Hackathon Details
 Developed for the **ENIT HACK 2026**.
-Team: *Influencer Intel Squad*
+Team: **Vortex**
 
 ---
 
