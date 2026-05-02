@@ -2,37 +2,35 @@ import { NavLink, useLocation } from "react-router-dom";
 import { Search, Link2, Target, Clock, MessageSquare, FileText } from "lucide-react";
 import { recentSearches } from "@/data/demo";
 
+import { motion } from "framer-motion";
+
 const navItems = [
-  { to: "/", label: "Smart Search", icon: Search, end: true },
+  { to: "/", label: "Audits", icon: FileText, end: true },
   { to: "/analyzed-posts", label: "Analyzed Posts", icon: MessageSquare },
   { to: "/analyze-post", label: "Analyze via URL", icon: Link2 },
   { to: "/product-match", label: "Product Match", icon: Target },
-  { to: "/reports", label: "Audits", icon: FileText },
 ];
 
 export function Sidebar() {
   const { pathname } = useLocation();
 
   return (
-    <aside className="w-[220px] shrink-0 bg-surface border-r border-line h-screen sticky top-0 flex flex-col">
+    <aside className="w-[240px] shrink-0 bg-surface/40 backdrop-blur-xl border-r border-white/5 h-screen sticky top-0 flex flex-col z-40">
       {/* Brand */}
-      <div className="px-5 pt-6 pb-5">
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="w-3.5 h-3.5 rotate-45 bg-primary rounded-[2px]"
-          />
-          <span className="text-[15px] font-semibold text-ink tracking-tight-2">
-            ENIT HACK
-          </span>
-        </div>
-        <div className="mt-1 text-[11px] text-ink-muted pl-[22px]">
-          Influencer Intelligence
-        </div>
+      <div className="px-6 pt-10 pb-8">
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className="flex items-center gap-3 cursor-pointer"
+        >
+          <div className="relative">
+            <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain rounded-xl logo-glow relative z-10" />
+            <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full -z-10" />
+          </div>
+        </motion.div>
       </div>
 
       {/* Nav */}
-      <nav className="px-2 flex flex-col gap-0.5">
+      <nav className="px-3 flex flex-col gap-1.5 relative">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active =
@@ -42,16 +40,27 @@ export function Sidebar() {
               key={item.to}
               to={item.to}
               end={item.end}
-              className={`relative flex items-center gap-2.5 h-9 px-3 rounded-md text-[13px] font-medium transition-colors duration-150 ${
+              className={`relative flex items-center gap-4 h-12 px-5 rounded-xl text-[16px] font-bold transition-all duration-300 z-10 ${
                 active
-                  ? "bg-surface-input text-ink"
-                  : "text-ink-secondary hover:bg-background"
+                  ? "text-white"
+                  : "text-text-secondary hover:text-white hover:bg-white/5"
               }`}
             >
               {active && (
-                <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full bg-primary" />
+                <motion.div
+                  layoutId="sidebar-active-bg"
+                  className="absolute inset-0 bg-white/10 rounded-xl z-[-1] border border-white/10 shadow-lg"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
               )}
-              <Icon size={15} strokeWidth={1.75} />
+              {active && (
+                <motion.span 
+                  layoutId="sidebar-active-indicator"
+                  className="absolute left-1 top-2.5 bottom-2.5 w-[3px] rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" 
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon size={18} strokeWidth={active ? 2.5 : 2} className={active ? "text-primary" : ""} />
               <span>{item.label}</span>
             </NavLink>
           );
@@ -59,21 +68,22 @@ export function Sidebar() {
       </nav>
 
       {/* Recent (pinned bottom) */}
-      <div className="mt-auto px-5 pb-6">
-        <div className="text-[10px] uppercase tracking-widest text-ink-muted mb-2">
-          Recent
+      <div className="mt-auto px-6 pb-10">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-4 opacity-50">
+          History
         </div>
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-3">
           {recentSearches.map((name) => (
             <li key={name}>
-              <button
+              <motion.button
+                whileHover={{ x: 4 }}
                 type="button"
-                className="w-full flex items-center gap-2 text-[13px] text-ink-secondary hover:text-ink truncate text-left"
+                className="w-full flex items-center gap-3 text-[12px] font-medium text-text-secondary hover:text-white transition-colors truncate text-left group"
                 title={name}
               >
-                <Clock size={12} className="shrink-0 text-ink-muted" />
-                <span className="truncate">{name}</span>
-              </button>
+                <div className="w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-primary transition-colors" />
+                <span className="truncate opacity-80 group-hover:opacity-100">{name}</span>
+              </motion.button>
             </li>
           ))}
         </ul>

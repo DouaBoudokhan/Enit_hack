@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { motion } from "framer-motion";
 
 type Tone = "neutral" | "teal" | "purple" | "blue" | "amber" | "coral";
 
@@ -25,10 +26,13 @@ export function Pill({
   const sizing =
     size === "sm" ? "text-[11px] px-2.5 py-[3px]" : "text-[12px] px-3 py-[5px]";
   return (
-    <span
+    <motion.span
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={`inline-flex items-center rounded-full font-medium ${toneClasses[tone]} ${sizing} ${className}`}
     >
       {children}
-    </span>
+    </motion.span>
   );
 }

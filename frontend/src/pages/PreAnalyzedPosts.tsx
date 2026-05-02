@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { Sparkles, Heart, MessageSquare, Send, Bookmark, Link2, MoreHorizontal } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import { StackedBar } from "@/components/Bars";
+import { Pill } from "@/components/Pill";
 
 interface AnalyzedPost {
   id: string;
@@ -12,6 +15,106 @@ interface AnalyzedPost {
   comments_count: number;
   analysis_result: string;
 }
+
+function CreativeAnalysis({ text }: { text: string }) {
+  // Remove bold markers for easier regex parsing
+  const cleanText = text.replace(/\*\*/g, "");
+  
+  const sentimentsMatch = cleanText.match(/Positif[:\s]+(\d+)%[^N]*Négatif[:\s]+(\d+)%[^I]*Indifférent[:\s]+(\d+)%/i);
+  const cqsMatch = cleanText.match(/Qualité de la Conversation\s*:\s*(\d+(?:\.\d+)?)\/10/i);
+  
+  if (!sentimentsMatch || !cqsMatch) {
+    // Fallback if parsing fails
+    return (
+      <div className="prose prose-sm prose-p:my-1 prose-strong:text-ink max-w-none pr-2">
+        <ReactMarkdown>{(text || "No analysis available").replace(/\n/g, '\n\n').replace(/\n\n\n/g, '\n\n')}</ReactMarkdown>
+      </div>
+    );
+  }
+
+  const pos = parseInt(sentimentsMatch[1]);
+  const neg = parseInt(sentimentsMatch[2]);
+  const ind = parseInt(sentimentsMatch[3]);
+  const cqs = parseFloat(cqsMatch[1]);
+
+  let justification = "";
+  let themes = "";
+  
+  const justMatch = cleanText.match(/Justification[^\:]*:\s*(.*?)(?:Thèmes dominants|$)/i);
+  if (justMatch) justification = justMatch[1].trim();
+  
+  const themesMatch = cleanText.match(/Thèmes dominants[^\:]*:\s*(.*)/i);
+  if (themesMatch) themes = themesMatch[1].trim();
+
+  // If themes contains parentheses with Arabic, we can just split by commas.
+  const themeTags = themes.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+  return (
+    <div className="flex flex-col gap-3.5 pr-2 mt-3 pb-1">
+      {/* Sentiments */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between items-center text-[11px] font-semibold">
+          <span className="text-teal">Positif {pos}%</span>
+          <span className="text-ink-muted">Indifférent {ind}%</span>
+          <span className="text-coral">Négatif {neg}%</span>
+        </div>
+        <StackedBar 
+          segments={[
+            { pct: pos, color: "hsl(159 100% 33%)" },
+            { pct: ind, color: "hsl(36 5% 60%)" },
+            { pct: neg, color: "hsl(11 80% 54%)" },
+          ]} 
+          height={6} 
+        />
+      </div>
+
+      {/* CQS */}
+      <div className="flex items-center justify-between bg-white dark:bg-[#1A1A1A] border border-line rounded-[8px] px-3 py-2 shadow-sm">
+        <span className="text-[12px] font-semibold text-ink-secondary">Qualité de Conversation</span>
+        <div className="flex items-center gap-1.5">
+          <strong className={`text-[14px] tracking-tight ${cqs >= 7 ? "text-teal" : cqs >= 5 ? "text-amber" : "text-coral"}`}>{cqs}/10</strong>
+        </div>
+      </div>
+
+      {/* Justification */}
+      {justification && (
+        <div className="text-[12.5px] text-ink-secondary leading-relaxed bg-surface-input/60 p-3 rounded-[8px] border border-line/50">
+          <strong className="text-ink text-[11px] uppercase tracking-widest block mb-1.5 opacity-80">Résumé de l'Agent</strong>
+          {justification}
+        </div>
+      )}
+
+      {/* Themes */}
+      {themeTags.length > 0 && (
+        <div className="flex flex-col gap-2 mt-1">
+          <strong className="text-ink text-[11px] uppercase tracking-widest opacity-80">Thèmes Abordés</strong>
+          <div className="flex flex-wrap gap-1.5">
+            {themeTags.map((tag, i) => (
+              <Pill key={i} size="sm" tone="purple" className="!bg-primary/10 !text-primary !border !border-primary/20">
+                {tag}
+              </Pill>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+import { motion } from "framer-motion";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 export default function PreAnalyzedPosts() {
   const [posts, setPosts] = useState<AnalyzedPost[]>([]);
@@ -50,9 +153,18 @@ export default function PreAnalyzedPosts() {
           Aucun post analysé trouvé dans le dossier sm_crew/post_analysis/
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+        >
           {posts.map((p, idx) => (
-            <div key={`${p.id}-${idx}`} className="bg-white border border-line-strong/40 rounded-[16px] overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-[#121212] dark:border-white/10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+            <motion.div 
+              variants={itemVariants}
+              key={`${p.id}-${idx}`} 
+              className="bg-white/90 backdrop-blur-xl border border-line-strong/40 rounded-[16px] overflow-hidden flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-[#121212]/90 dark:border-white/10 hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] hover:-translate-y-2 transition-all duration-300"
+            >
               
               {/* Instagram Style Header */}
               <div className="flex items-center justify-between p-3 border-b border-line dark:border-white/5">
@@ -134,8 +246,8 @@ export default function PreAnalyzedPosts() {
                      <Sparkles className="text-primary w-4 h-4" />
                      <h3 className="font-semibold text-primary text-[14px]">Analyse IA</h3>
                    </div>
-                  <div className="text-[13px] text-ink-secondary leading-relaxed max-h-[150px] overflow-y-auto">
-                    <div dangerouslySetInnerHTML={{ __html: p.analysis_result?.replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>').replace(/\n/g, '<br/>') || "No analysis available" }} />
+                  <div className="text-[13px] text-ink-secondary leading-relaxed max-h-[280px] overflow-y-auto custom-scrollbar">
+                    <CreativeAnalysis text={p.analysis_result || ""} />
                   </div>
                 </div>
 
@@ -145,9 +257,9 @@ export default function PreAnalyzedPosts() {
                   </a>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );

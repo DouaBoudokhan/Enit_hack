@@ -1,0 +1,37 @@
+research_influencer_task:
+  description: >
+    MISSION : Effectuer une recherche exhaustive sur l'influenceuse "{influencer_name}".
+    REQUÊTE SPÉCIFIQUE DE L'UTILISATEUR : "{specific_query}"
+    
+    ÉTAPES OBLIGATOIRES :
+    1. Si la "REQUÊTE SPÉCIFIQUE" est détaillée (pas juste une analyse générale), concentrez TOUTES vos recherches sur cette question précise (ex: pubs pour parfums, controverses récentes, etc.) en cherchant sur Google : "{influencer_name} {specific_query}".
+    2. Si la requête est générale, cherchez : "{influencer_name} influenceuse instagram", ses controverses et collaborations.
+    3. Scraper au moins 2-3 pages web pertinentes trouvées pour extraire des détails précis.
+    
+    DONNÉES À COLLECTER :
+    - Réponse directe et détaillée à la REQUÊTE SPÉCIFIQUE (Priorité absolue)
+    - Nom complet, pays, followers
+    - Liste des collaborations/marques
+    - Controverses, scandales, ou polémiques
+  expected_output: >
+    Un rapport de recherche brut avec toutes les données trouvées, les URLs sources, et les extraits pertinents. Structurez par catégorie.
+  agent: web_researcher
+
+synthesize_reputation_task:
+  description: >
+    À partir du rapport de recherche brut fourni sur "{influencer_name}", produisez une analyse de réputation complète et structurée qui répond directement à : "{specific_query}".
+    
+    STRUCTURE DU RAPPORT FINAL :
+    1. RÉPONSE DIRECTE : Répondez d'abord clairement à la question de l'utilisateur (si elle est spécifique).
+    2. PROFIL : Nom, followers, image publique rapide.
+    3. COLLABORATIONS & RISQUES : Ce qui ressort de pertinent pour des marques.
+    4. VERDICT : Note de confiance sur 10.
+    
+    RÈGLES :
+    - Soyez factuel, direct, et conversationnel.
+    - Contextualisez culturellement (Maghreb/Tunisie).
+  expected_output: >
+    Un rapport structuré en 5 sections avec une note de confiance finale sur 10.
+    Format concis, chaque section en 2-4 phrases maximum.
+    Le tout doit tenir dans un message vocal de 30 secondes si lu à voix haute.
+  agent: reputation_analyst

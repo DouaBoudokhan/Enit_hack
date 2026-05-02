@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppLayout from "./layouts/AppLayout";
-import SmartSearch from "./pages/SmartSearch";
 import PreAnalyzedPosts from "./pages/PreAnalyzedPosts";
 import AnalyzePost from "./pages/AnalyzePost";
 import PasteUrl from "./pages/PasteUrl";
@@ -22,12 +21,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route element={<AppLayout />}>
-            <Route path="/" element={<SmartSearch />} />
+            <Route path="/" element={<Reports />} />
             <Route path="/analyzed-posts" element={<PreAnalyzedPosts />} />
             <Route path="/analyze-post" element={<AnalyzePost />} />
             <Route path="/paste-url" element={<PasteUrl />} />
             <Route path="/product-match" element={<ProductMatch />} />
-            <Route path="/reports" element={<Reports />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

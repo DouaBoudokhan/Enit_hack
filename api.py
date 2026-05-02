@@ -940,13 +940,15 @@ async def _analyze_live_post_async(post_url: str) -> dict:
     # Step 4: Analyze scraped comments using the pipeline's Agent Persona
     # ══════════════════════════════════════════════════════
     from azure_config import normalize_azure_endpoint
-    endpoint = normalize_azure_endpoint(os.environ.get("AZURE_OPENAI_ENDPOINT", ""))
-    api_key = os.environ.get("AZURE_OPENAI_API_KEY", "")
-    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5.2-chat")
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
+    raw_endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT") or os.environ.get("AZURE_API_BASE", "")
+    endpoint = normalize_azure_endpoint(raw_endpoint)
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY") or os.environ.get("AZURE_API_KEY", "")
+    raw_model = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME") or os.environ.get("model", "gpt-5.2-chat")
+    deployment = raw_model.replace("azure/", "")
+    api_version = os.environ.get("AZURE_OPENAI_API_VERSION") or os.environ.get("AZURE_API_VERSION", "2025-04-01-preview")
 
     sentiment_data = {"positive": 0, "neutral": 100, "negative": 0, "avg_quality": 5, "toxicity_rate": 0, "total_comments": len(scraped_comments)}
-    context_insight = visual_description if visual_description else f"Instagram post by @{handle}. {len(scraped_comments)} comments were analyzed."
+    context_insight = f"Instagram post by @{handle}. {len(scraped_comments)} comments were analyzed."
     
     if scraped_comments and endpoint and api_key:
         try:
@@ -954,12 +956,12 @@ async def _analyze_live_post_async(post_url: str) -> dict:
             
             # Use the agent persona from sm_crew/src/sm_crew/config/post_agents.yaml
             system_prompt = f"""Role: Data Analyst Senior en Intelligence Artificielle & Réseaux Sociaux (Spécialité Maghreb)
-Goal: Extraire des signaux clairs, objectifs et quantifiables (sentiments et qualité) à partir d'un échantillon de commentaires bruts pour l'influenceur {handle}.
-Backstory: Vous possédez plus de 10 ans d'expérience en NLP appliqué aux réseaux sociaux. Vous êtes bilingue et maîtrisez parfaitement les subtilités du dialecte tunisien (Darja), de l'Arabizi (franco-arabe) et des expressions culturelles maghrébines. Vous savez isoler le bruit des véritables signaux d'engagement. Votre jugement est purement analytique et impartial."""
+Goal: Extraire des signaux clairs, objectifs et quantifiables (sentiments et qualité) à partir d'un échantillon de commentaires bruts pour l'influenceur @{handle}.
+Backstory: Vous possédez plus de 10 ans d'expérience en NLP appliqué aux réseaux sociaux. Vous êtes bilingue et maîtrisez parfaitement les subtilités du dialecte tunisien (Darja), de l'Arabizi (franco-arabe) et la culture pop maghrébine (bad buzz, réputations des influenceurs). Vous savez lire entre les lignes. Votre jugement est purement analytique et impartial."""
 
             comments_payload = [{"id": c["id"], "owner": c["ownerUsername"], "text": c["text"]} for c in scraped_comments]
 
-            user_prompt = f"""CONTEXTE : Vous évaluez l'engagement d'une publication de {handle} dont la légende est : "{post_metadata.get('caption', '')}".
+            user_prompt = f"""CONTEXTE : Vous évaluez l'engagement d'une publication de l'influenceur(se) @{handle} dont la légende est : "{post_metadata.get('caption', '')}".
             
 VOICI LES COMMENTAIRES :
 {json.dumps(comments_payload, ensure_ascii=False)}
@@ -967,12 +969,14 @@ VOICI LES COMMENTAIRES :
 OBJECTIFS D'ANALYSE :
 1. Sentiment Global : Calculez les pourcentages stricts (positive, negative, neutral) basés sur les commentaires fournis. (Somme = 100).
 2. Qualité de conversation globale : Attribuez une note moyenne sur 10 (avg_quality).
-3. Justification : Une brève explication analytique (context_insight) s'appuyant sur les expressions utilisées.
+3. Justification : Une brève explication analytique (context_insight) s'appuyant sur les expressions utilisées ET la réputation de l'influenceur.
 4. Évaluation individuelle : Pour CHAQUE commentaire, déterminez son sentiment (positive/negative/neutral) et sa qualité (1-10).
 
-RÈGLES STRICTES :
-- Prenez en compte le sarcasme tunisien.
-- Retournez UNIQUEMENT un objet JSON valide, sans texte markdown autour.
+RÈGLES STRICTES ET CONTEXTE TUNISIEN :
+- Utilisez vos connaissances sur la réputation de @{handle} (ex: controverses, bad buzz, historique).
+- DÉTECTION DU SARCASME : Si un(e) influenceur(se) controversé(e) publie du contenu inattendu (ex: religieux) et que les commentaires contiennent "😂", "نهار تصالي و نهر تعاري", ou "واخيرا تابت", c'est de la moquerie et de l'hypocrisie dénoncée. Ce sentiment DOIT être classé "negative" (et non neutral ou positive).
+- Un commentaire composé uniquement d'emojis de rire face à une situation sérieuse/incohérente est "negative".
+- Retournez UNIQUEMENT un objet JSON valide, sans code bloc markdown autour.
 
 FORMAT JSON ATTENDU :
 {{
@@ -997,8 +1001,7 @@ FORMAT JSON ATTENDU :
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                response_format={"type": "json_object"},
-                temperature=0.1
+                response_format={"type": "json_object"}
             )
             
             agent_result = json.loads(resp.choices[0].message.content)
@@ -1060,7 +1063,7 @@ FORMAT JSON ATTENDU :
         f"Instagram post by @{handle}. {len(scraped_comments)} comments were scraped and analyzed for sentiment."
     )
 
-    return {
+    response_payload = {
         "post": {
             "post_id": post_url,
             "post_url": post_url,
@@ -1082,6 +1085,22 @@ FORMAT JSON ATTENDU :
         "is_simulated": False,
         "comments_source": "apify" if scraped_comments else "none",
     }
+    
+    # Save the analyzed JSON payload
+    try:
+        import time
+        save_dir = BASE_DIR / "data" / "live_analyzed_posts"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        # Use post ID if available, otherwise timestamp
+        safe_id = post_url.split("/")[-2] if "/" in post_url and post_url.split("/")[-2] else str(int(time.time()))
+        save_path = save_dir / f"{handle}_{safe_id}.json"
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(response_payload, f, ensure_ascii=False, indent=2)
+        logger.info(f"[IO] Saved live analysis to {save_path}")
+    except Exception as e:
+        logger.error(f"[IO] Failed to save analysis json: {e}")
+
+    return response_payload
 
 
 @app.post("/api/match-product")
@@ -1136,6 +1155,50 @@ async def proxy_image(url: str):
         logger.error(f"Failed to proxy image {url}: {e}")
         # Return fallback on any exception
         return RedirectResponse("https://placehold.co/600x400/1E1E2E/A6ADC8?text=Image+Expired")
+
+
+class InvestigateRequest(BaseModel):
+    influencer_name: str
+    specific_query: str
+
+
+@app.post("/api/investigate-influencer")
+async def investigate_influencer(req: InvestigateRequest):
+    """Run the VoiceInvestigationCrew to research an influencer via web search & scraping."""
+    import asyncio
+    name = req.influencer_name.strip()
+    query = req.specific_query.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="influencer_name is required")
+
+    logger.info(f"[VOICE-CREW] Starting investigation for: {name.encode('utf-8', 'ignore').decode('utf-8')} | Query: {query.encode('utf-8', 'ignore').decode('utf-8')}")
+
+    try:
+        def _run_crew():
+            from sm_crew.src.sm_crew.voice_crew import VoiceInvestigationCrew
+            crew_instance = VoiceInvestigationCrew()
+            result = crew_instance.crew().kickoff(inputs={
+                "influencer_name": name,
+                "specific_query": query
+            })
+            return str(result)
+
+        report = await asyncio.to_thread(_run_crew)
+        logger.info(f"[VOICE-CREW] Investigation complete for: {name.encode('utf-8', 'ignore').decode('utf-8')}")
+
+        # Persist the report
+        save_dir = BASE_DIR / "data" / "voice_investigations"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        safe_name = name.replace(" ", "_").replace("/", "_")
+        save_path = save_dir / f"{safe_name}.md"
+        with open(save_path, "w", encoding="utf-8") as f:
+            f.write(report)
+
+        return {"influencer_name": name, "report": report}
+
+    except Exception as e:
+        logger.error(f"[VOICE-CREW] Investigation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,274 @@
+{
+  "post": {
+    "post_id": "https://www.instagram.com/p/DXfCcYfDau5/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==",
+    "post_url": "https://www.instagram.com/p/DXfCcYfDau5/?utm_source=ig_web_copy_link&igsh=NTc4MTIwNjQ2YQ==",
+    "display_url": "https://scontent-hou1-1.cdninstagram.com/v/t51.82787-15/675490858_18543867784068010_2717542550303775197_n.jpg?stp=dst-jpg_e35_p1080x1080_sh2.08_tt6&_nc_ht=scontent-hou1-1.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2gGtx3so83frL1YC4IHhQxLFcLU8DoD9Ovt90wQSHy_arlcuGRj9dX7bzjpHruTsAoM&_nc_ohc=CWQ5g2GNZHEQ7kNvwFkplmT&_nc_gid=vasvxvRBhkckw81c7aTQag&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af7bb7FpTzXY1skd-mH4ouKPzL8ahBzFLCB6glat3XTGOA&oe=69FB51F0&_nc_sid=10d13b",
+    "media_type": "image",
+    "enriched_content": "Here is the analysis of the Instagram post image:\n\n1. The image shows a young woman posing in front of a lavender-colored backdrop with the Givenchy logo and the word \"IRRESISTIBLE\" printed on it. She is wearing a white t-shirt, light blue jeans, and a shiny silver sequined top layer. She is also holding a small purse and has long dark hair.\n2. The content category of this image is Fashion, specifically luxury fashion, as indicated by the Givenchy branding.\n3. Brands that would benefit from this content are high-end fashion brands, particularly those in the luxury segment such as Givenchy, as well as beauty and cosmetics brands that align with the fashion industry. The image's aesthetic and style also make it suitable for brands targeting a young, fashion-conscious audience.",
+    "likes_count": 4739,
+    "comments_count": 30,
+    "caption": "An afternoon with @givenchybeauty discovering the new NECTAR eau de parfum 🍦🤍✨"
+  },
+  "influencer": {
+    "name": "beyamlika",
+    "handle": "beyamlika"
+  },
+  "content_type": "Beauty",
+  "sentiment": {
+    "positive": 100,
+    "neutral": 0,
+    "negative": 0,
+    "avg_quality": 7.7,
+    "toxicity_rate": 0,
+    "total_comments": 15
+  },
+  "language_breakdown": [
+    {
+      "language": "Emoji only",
+      "count": 9,
+      "percentage": 60
+    },
+    {
+      "language": "Other",
+      "count": 5,
+      "percentage": 33
+    },
+    {
+      "language": "English",
+      "count": 1,
+      "percentage": 7
+    }
+  ],
+  "context_insight": "Here is the analysis of the Instagram post image:\n\n1. The image shows a young woman posing in front of a lavender-colored backdrop with the Givenchy logo and the word \"IRRESISTIBLE\" printed on it. She is wearing a white t-shirt, light blue jeans, and a shiny silver sequined top layer. She is also holding a small purse and has long dark hair.\n2. The content category of this image is Fashion, specifically luxury fashion, as indicated by the Givenchy branding.\n3. Brands that would benefit from this content are high-end fashion brands, particularly those in the luxury segment such as Givenchy, as well as beauty and cosmetics brands that align with the fashion industry. The image's aesthetic and style also make it suitable for brands targeting a young, fashion-conscious audience.",
+  "comments": [
+    {
+      "id": "17855015742640663",
+      "text": "Outfit on point ✨🧚🏻‍♀️",
+      "ownerUsername": "yasmine.mabroukk",
+      "owner": {
+        "username": "yasmine.mabroukk"
+      },
+      "likesCount": 1,
+      "repliesCount": 1,
+      "timestamp": "2026-04-24T17:38:32.000Z",
+      "sentiment": "positive",
+      "quality_score": 7,
+      "toxicity_flag": false,
+      "language": "Other"
+    },
+    {
+      "id": "18396353581157710",
+      "text": "🩷🩷🩷",
+      "ownerUsername": "onshm",
+      "owner": {
+        "username": "onshm"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T19:22:00.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Other"
+    },
+    {
+      "id": "18069419849418226",
+      "text": "Bayouti ❤️",
+      "ownerUsername": "eya.naccache",
+      "owner": {
+        "username": "eya.naccache"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T19:01:57.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Other"
+    },
+    {
+      "id": "17961967989080663",
+      "text": "❤️❤️❤️❤️❤️❤️",
+      "ownerUsername": "nour_benzartiii",
+      "owner": {
+        "username": "nour_benzartiii"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-24T11:45:50.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "17960897798932954",
+      "text": "😍😍😍",
+      "ownerUsername": "myriam__soui",
+      "owner": {
+        "username": "myriam__soui"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T19:16:21.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "18140993368502252",
+      "text": "😍😍😍😍",
+      "ownerUsername": "sageagencyofficial",
+      "owner": {
+        "username": "sageagencyofficial"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T18:57:53.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "17993077880778467",
+      "text": "💗💗💗💗",
+      "ownerUsername": "olfadhahri",
+      "owner": {
+        "username": "olfadhahri"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T19:14:27.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "18070389233310116",
+      "text": "😍😍😍",
+      "ownerUsername": "zayneeeeeeb___",
+      "owner": {
+        "username": "zayneeeeeeb___"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T19:05:47.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "18088824191191091",
+      "text": "❤️❤️❤️❤️",
+      "ownerUsername": "cmoujib",
+      "owner": {
+        "username": "cmoujib"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T18:56:24.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "18060508229441229",
+      "text": "Girllll you're so pretttyyy",
+      "ownerUsername": "haajerben_ali",
+      "owner": {
+        "username": "haajerben_ali"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T19:20:02.000Z",
+      "sentiment": "positive",
+      "quality_score": 8,
+      "toxicity_flag": false,
+      "language": "English"
+    },
+    {
+      "id": "17886520311370010",
+      "text": "😍😍😍😍",
+      "ownerUsername": "inesmmestiri",
+      "owner": {
+        "username": "inesmmestiri"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T19:23:36.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "18165488314417654",
+      "text": "trop trop trop belle 💞💞",
+      "ownerUsername": "chaiebsalma",
+      "owner": {
+        "username": "chaiebsalma"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T22:31:15.000Z",
+      "sentiment": "positive",
+      "quality_score": 9,
+      "toxicity_flag": false,
+      "language": "Other"
+    },
+    {
+      "id": "18316026880285743",
+      "text": "❤️❤️❤️❤️",
+      "ownerUsername": "hathroubisouha",
+      "owner": {
+        "username": "hathroubisouha"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-23T20:06:29.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    },
+    {
+      "id": "18161413342440728",
+      "text": "Ravissante ❤️🌺",
+      "ownerUsername": "daloula_beauty",
+      "owner": {
+        "username": "daloula_beauty"
+      },
+      "likesCount": 0,
+      "repliesCount": 0,
+      "timestamp": "2026-04-30T20:20:53.000Z",
+      "sentiment": "positive",
+      "quality_score": 8,
+      "toxicity_flag": false,
+      "language": "Other"
+    },
+    {
+      "id": "18338622097219519",
+      "text": "😍😍",
+      "ownerUsername": "salma_collection.tn",
+      "owner": {
+        "username": "salma_collection.tn"
+      },
+      "likesCount": 0,
+      "repliesCount": 1,
+      "timestamp": "2026-04-24T11:14:08.000Z",
+      "sentiment": "positive",
+      "quality_score": 6,
+      "toxicity_flag": false,
+      "language": "Emoji only"
+    }
+  ],
+  "ai_generated": false,
+  "vision_used": true,
+  "is_simulated": false,
+  "comments_source": "apify"
+}

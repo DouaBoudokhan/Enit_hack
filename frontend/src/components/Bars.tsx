@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 export function AnimatedBar({
   pct,
@@ -13,20 +13,17 @@ export function AnimatedBar({
   delay?: number;
   height?: number;
 }) {
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => setW(pct), 60 + delay);
-    return () => clearTimeout(t);
-  }, [pct, delay]);
-
   return (
     <div
       className="w-full bg-surface-input rounded-full overflow-hidden"
       style={{ height }}
     >
-      <div
-        className="bar-fill h-full rounded-full"
-        style={{ width: `${w}%`, background: color, opacity }}
+      <motion.div
+        className="h-full rounded-full"
+        initial={{ width: "0%" }}
+        animate={{ width: `${pct}%` }}
+        transition={{ type: "spring", stiffness: 100, damping: 20, delay: delay / 1000 }}
+        style={{ background: color, opacity }}
       />
     </div>
   );
@@ -39,26 +36,19 @@ export function StackedBar({
   segments: { pct: number; color: string }[];
   height?: number;
 }) {
-  const [animated, setAnimated] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 60);
-    return () => clearTimeout(t);
-  }, []);
-
   return (
     <div
       className="w-full rounded-full overflow-hidden flex bg-surface-input"
       style={{ height }}
     >
       {segments.map((s, i) => (
-        <div
+        <motion.div
           key={i}
-          className="bar-fill h-full"
-          style={{
-            width: animated ? `${s.pct}%` : "0%",
-            background: s.color,
-            transitionDelay: `${i * 80}ms`,
-          }}
+          className="h-full"
+          initial={{ width: "0%" }}
+          animate={{ width: `${s.pct}%` }}
+          transition={{ type: "spring", stiffness: 100, damping: 20, delay: (i * 80) / 1000 }}
+          style={{ background: s.color }}
         />
       ))}
     </div>

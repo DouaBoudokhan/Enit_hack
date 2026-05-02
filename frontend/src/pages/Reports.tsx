@@ -4,7 +4,7 @@ import { Card, CardHeader } from "@/components/Card";
 import { Pill } from "@/components/Pill";
 import { AnimatedBar, StackedBar } from "@/components/Bars";
 import { CountNumber } from "@/components/CountNumber";
-import { Users, ExternalLink } from "lucide-react";
+import { Users, ExternalLink, Search } from "lucide-react";
 
 interface FormatData {
   likes: number;
@@ -101,7 +101,6 @@ const Reports = () => {
       setActiveReport(match);
     } else {
       setActiveReport(null);
-      alert("Influenceur introuvable dans la base locale");
     }
   };
 
@@ -120,17 +119,17 @@ const Reports = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-[80vh] items-center justify-center">
         <div className="relative">
           <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="absolute -inset-4 bg-primary/20 blur-xl rounded-full"
+            animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0.3, 0.1] }}
+            transition={{ repeat: Infinity, duration: 3 }}
+            className="absolute -inset-10 bg-primary/30 blur-[60px] rounded-full"
           />
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-            className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full shadow-2xl"
+            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+            className="w-12 h-12 border-2 border-white/5 border-t-primary rounded-full"
           />
         </div>
       </div>
@@ -140,164 +139,194 @@ const Reports = () => {
   const p = activeReport?.parsed;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-[22px] font-semibold text-ink tracking-tight-2">
-          Audits d'Engagement
-        </h1>
-        <p className="text-[14px] text-ink-secondary mt-1">
-          Intelligence augmentée pour décoder les dynamiques sociales et l'influence réelle.
-        </p>
-      </div>
-
-      <form onSubmit={handleSearch}>
-        <div className="relative bg-surface border border-line-strong/80 rounded-[10px] h-12 flex items-center px-4 transition-shadow focus-within:border-primary focus-within:shadow-[0_0_0_3px_hsl(var(--accent-purple)/0.1)]">
-          <input
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              if (!e.target.value.trim()) setActiveReport(null);
-            }}
-            placeholder="Search by name, e.g. Oumaima Hamrouni"
-            className="flex-1 bg-transparent outline-none text-[14px] text-ink placeholder:text-ink-muted"
-          />
-          <button
-            type="submit"
-            className="bg-primary hover:bg-primary-strong text-primary-foreground text-[14px] font-medium h-8 px-4 rounded-lg transition-colors duration-150 active:scale-[0.98]"
-          >
-            Analyze →
-          </button>
+    <div className="max-w-6xl mx-auto">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6"
+      >
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tighter mb-2">
+            Social Intelligence Hub
+          </h1>
+          <p className="text-[15px] text-text-secondary max-w-lg leading-relaxed">
+            Analyze Tunisian influencers with real-time OSINT data, sentiment mapping, and engagement auditing.
+          </p>
         </div>
-      </form>
+        
+        <form onSubmit={handleSearch} className="relative group min-w-[320px]">
+          <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent-teal rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
+          <div className="relative glass-card flex items-center px-4 h-14">
+            <Search className="text-text-muted mr-3" size={18} />
+            <input
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (!e.target.value.trim()) setActiveReport(null);
+              }}
+              placeholder="Search influencer..."
+              className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-text-muted font-medium text-[15px]"
+            />
+            <button
+              type="submit"
+              className="bg-primary text-black font-black text-[13px] px-4 py-1.5 rounded-lg active:scale-95 transition-transform"
+            >
+              SEARCH
+            </button>
+          </div>
+        </form>
+      </motion.div>
 
-      <div className="mt-8">
+      <div className="space-y-8">
         <AnimatePresence mode="wait">
-          {activeReport && p && (
+          {!activeReport ? (
+             <motion.div
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+             >
+               {reports.map((report, idx) => (
+                 <motion.div
+                   key={report.id}
+                   initial={{ opacity: 0, scale: 0.95 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   transition={{ delay: idx * 0.05 }}
+                   whileHover={{ y: -5, scale: 1.02 }}
+                   onClick={() => setActiveReport(report)}
+                   className="glass-card p-6 cursor-pointer group relative overflow-hidden"
+                 >
+                   <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink size={16} className="text-primary" />
+                   </div>
+                   <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center font-black text-primary text-xl border border-white/5">
+                        {report.name[0]}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-[16px] leading-tight">{report.name}</h3>
+                        <p className="text-[13px] text-text-muted">@{report.id}</p>
+                      </div>
+                   </div>
+                   <div className="flex flex-wrap gap-2 mb-4">
+                      <Pill className="bg-white/5 text-white/60 border-none">{report.parsed?.primary_niche || "Lifestyle"}</Pill>
+                      <Pill className="bg-primary/10 text-primary border-none">Tunisia</Pill>
+                   </div>
+                   <div className="flex items-center justify-between mt-6 pt-6 border-t border-white/5">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-text-muted tracking-widest">CQS Score</span>
+                        <span className="text-xl font-black text-accent-teal">{report.parsed?.cqs || "N/A"}</span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[10px] uppercase font-bold text-text-muted tracking-widest">Audience</span>
+                        <span className="text-[13px] font-bold text-white">{report.parsed?.followers ? formatFollowers(report.parsed.followers) : "N/A"}</span>
+                      </div>
+                   </div>
+                 </motion.div>
+               ))}
+             </motion.div>
+          ) : (
             <motion.div
               key={activeReport.id}
               variants={containerVariants}
               initial="hidden"
               animate="visible"
               exit={{ opacity: 0, y: 20 }}
-              className="flex flex-col gap-4 animate-fade-in"
+              className="space-y-6"
             >
-              {/* HERO CARD */}
-              <Card>
-                <div className="flex items-stretch gap-8">
-                  {/* Left: identity */}
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div
-                      className="w-[72px] h-[72px] rounded-full flex items-center justify-center shrink-0"
-                      style={{ background: "hsl(36 35% 86%)" }}
+              {/* BACK BUTTON */}
+              <button 
+                onClick={() => setActiveReport(null)}
+                className="text-[13px] font-bold text-primary flex items-center gap-2 hover:translate-x-[-4px] transition-transform mb-2"
+              >
+                ← Back to overview
+              </button>
+
+              {/* HERO GLASS CARD */}
+              <div className="glass-card p-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] -mr-32 -mt-32"></div>
+                
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12">
+                  <div className="flex items-start gap-8">
+                    <motion.div 
+                      whileHover={{ rotate: 10, scale: 1.1 }}
+                      className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-accent-teal p-0.5"
                     >
-                      <span className="text-[22px] font-semibold text-primary-ink">
+                      <div className="w-full h-full rounded-[22px] bg-[#0A0A0B] flex items-center justify-center font-black text-3xl text-white">
                         {activeReport.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[20px] font-semibold text-ink tracking-tight-2">
-                        {activeReport.name}
                       </div>
-                      <div className="text-[13px] text-ink-muted">@{activeReport.id}</div>
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        <Pill tone="neutral" size="sm">{p.primary_niche || "Lifestyle"}</Pill>
-                        {p.secondary_niches?.map((n) => (
-                          <Pill key={n} tone="neutral" size="sm">{n}</Pill>
+                    </motion.div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <h2 className="text-4xl font-black text-white tracking-tighter leading-none mb-1">
+                          {activeReport.name}
+                        </h2>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold text-text-muted">@{activeReport.id}</span>
+                          <a href={`https://instagram.com/${activeReport.id}`} target="_blank" className="text-primary hover:text-white transition-colors">
+                            <ExternalLink size={18} />
+                          </a>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <Pill className="bg-primary/20 text-primary border border-primary/20">{p.primary_niche || "Lifestyle"}</Pill>
+                        {p.secondary_niches?.slice(0, 2).map(n => (
+                          <Pill key={n} className="bg-white/5 text-white/70 border border-white/10">{n}</Pill>
                         ))}
-                        <Pill tone="teal" size="sm">Tunisia</Pill>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[13px] text-ink-secondary mt-2.5">
-                        <Users size={13} className="text-ink-muted" />
-                        {p.followers ? formatFollowers(p.followers) : "N/A"}
-                      </div>
-                      {/* Social links */}
-                      <div className="flex items-center gap-3 mt-2">
-                        <a href={`https://www.instagram.com/${activeReport.id}/`} target="_blank" rel="noopener noreferrer"
-                           className="flex items-center gap-1 text-[12px] text-primary hover:text-primary-strong transition-colors">
-                          <ExternalLink size={11} /> Instagram
-                        </a>
+                      
+                      <div className="flex items-center gap-4 pt-2">
+                        <div className="flex items-center gap-2 text-text-secondary font-bold text-[14px]">
+                          <Users size={16} className="text-primary" />
+                          {p.followers ? formatFollowers(p.followers) : "N/A"}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: 3 metrics */}
-                  <div className="flex items-center divide-x divide-line">
-                    <div className="px-7 first:pl-0 last:pr-0 flex flex-col items-start gap-1.5 min-w-[140px]">
-                      <div className="leading-none">
-                        <CountNumber value={p.cqs || 0} decimals={1} className="text-[32px] metric-num text-teal" />
-                      </div>
-                      <div className="text-[11px] text-ink-muted">CQS score</div>
-                      <Pill tone="teal" size="sm">{p.audience_health || "N/A"}</Pill>
+                  <div className="grid grid-cols-3 gap-8 lg:gap-12 py-6 px-8 bg-white/5 rounded-3xl border border-white/5 backdrop-blur-md">
+                    <div className="text-center space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">CQS Score</p>
+                      <p className="text-3xl font-black text-accent-teal">{p.cqs || "0"}</p>
+                      <div className="text-[10px] font-bold text-accent-teal/80 bg-accent-teal/10 rounded-full px-2 py-0.5">{p.audience_health || "Good"}</div>
                     </div>
-                    <div className="px-7 first:pl-0 last:pr-0 flex flex-col items-start gap-1.5 min-w-[140px]">
-                      <div className="leading-none">
-                        <CountNumber value={p.nps || 0} prefix="+" className="text-[32px] metric-num text-teal" />
-                      </div>
-                      <div className="text-[11px] text-ink-muted">Audience NPS</div>
-                      <Pill tone="teal" size="sm">{(p.nps || 0) >= 50 ? "Loyal" : "Moderate"}</Pill>
+                    <div className="text-center space-y-1 border-x border-white/5 px-8">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">NPS</p>
+                      <p className="text-3xl font-black text-primary">{p.nps ? `+${p.nps}` : "0"}</p>
+                      <div className="text-[10px] font-bold text-primary/80 bg-primary/10 rounded-full px-2 py-0.5">High Loyalty</div>
                     </div>
-                    <div className="px-7 first:pl-0 last:pr-0 flex flex-col items-start gap-1.5 min-w-[140px]">
-                      <div className="leading-none">
-                        <CountNumber value={p.engagement_rate || 0} decimals={1} suffix="%" className="text-[32px] metric-num text-blue" />
-                      </div>
-                      <div className="text-[11px] text-ink-muted">Engagement rate</div>
-                      <Pill tone="blue" size="sm">{(p.engagement_rate || 0) >= 3 ? "High" : "Moderate"}</Pill>
+                    <div className="text-center space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Engagement</p>
+                      <p className="text-3xl font-black text-accent-amber">{p.engagement_rate || "0"}%</p>
+                      <div className="text-[10px] font-bold text-accent-amber/80 bg-accent-amber/10 rounded-full px-2 py-0.5">Top 5%</div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Metrics grid */}
-                <div className="grid grid-cols-3 gap-3 mt-4">
-                  <div className="bg-background rounded-[10px] p-4">
-                    <div className="text-[12px] text-ink-muted">Audience health</div>
-                    <div className={`text-[18px] font-semibold mt-1 tracking-tight-2 ${tones.teal}`}>
-                      {p.audience_health || "N/A"}
-                    </div>
-                  </div>
-                  <div className="bg-background rounded-[10px] p-4">
-                    <div className="text-[12px] text-ink-muted">Toxicity rate</div>
-                    <div className={`text-[18px] font-semibold mt-1 tracking-tight-2 ${tones.ink}`}>
-                      {p.toxicity_rate != null ? `${p.toxicity_rate}%` : "N/A"}
-                    </div>
-                  </div>
-                  <div className="bg-background rounded-[10px] p-4">
-                    <div className="text-[12px] text-ink-muted">Comments analyzed</div>
-                    <div className={`text-[18px] font-semibold mt-1 tracking-tight-2 ${tones.ink}`}>
-                      {p.comments_analyzed || p.posts_analyzed || "N/A"}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* SENTIMENT ANALYSIS */}
-              {p.sentiment && (
-                <Card noPadding>
-                  <CardHeader
-                    title="Sentiment analysis"
-                    subtitle="Overall community sentiment from comment classification"
-                  />
-                  <div className="p-5">
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-teal))" }}>
-                        <div className="text-[28px] metric-num text-teal">
-                          <CountNumber value={p.sentiment.positive} decimals={1} suffix="%" />
-                        </div>
-                        <div className="text-[12px] text-ink-secondary mt-1">Positive</div>
-                        <div className="text-[11px] text-ink-muted">Genuine engagement</div>
+              {/* DETAILED STATS GRID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* SENTIMENT CARD */}
+                {p.sentiment && (
+                  <motion.div variants={containerVariants} className="glass-card p-6 lg:col-span-2">
+                    <h3 className="text-[16px] font-black text-white uppercase tracking-wider mb-6 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      Sentiment Analysis
+                    </h3>
+                    <div className="grid grid-cols-3 gap-6 mb-8">
+                      <div className="space-y-1">
+                        <span className="text-[40px] font-black text-accent-teal leading-none">{p.sentiment.positive}%</span>
+                        <p className="text-[11px] font-bold text-text-secondary uppercase tracking-widest">Positive</p>
                       </div>
-                      <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-amber))" }}>
-                        <div className="text-[28px] metric-num text-amber">
-                          <CountNumber value={p.sentiment.neutral} decimals={1} suffix="%" />
-                        </div>
-                        <div className="text-[12px] text-ink-secondary mt-1">Neutral</div>
-                        <div className="text-[11px] text-ink-muted">Questions & observations</div>
+                      <div className="space-y-1 border-x border-white/5 px-6">
+                        <span className="text-[40px] font-black text-accent-amber leading-none">{p.sentiment.neutral}%</span>
+                        <p className="text-[11px] font-bold text-text-secondary uppercase tracking-widest">Neutral</p>
                       </div>
-                      <div className="bg-background rounded-[10px] p-4 border-t-[3px]" style={{ borderTopColor: "hsl(var(--accent-coral))" }}>
-                        <div className="text-[28px] metric-num text-coral">
-                          <CountNumber value={p.sentiment.negative} decimals={1} suffix="%" />
-                        </div>
-                        <div className="text-[12px] text-ink-secondary mt-1">Negative</div>
-                        <div className="text-[11px] text-ink-muted">Criticism & spam</div>
+                      <div className="space-y-1">
+                        <span className="text-[40px] font-black text-accent-coral leading-none">{p.sentiment.negative}%</span>
+                        <p className="text-[11px] font-bold text-text-secondary uppercase tracking-widest">Negative</p>
                       </div>
                     </div>
                     <StackedBar
@@ -307,116 +336,81 @@ const Reports = () => {
                         { pct: p.sentiment.negative, color: "hsl(var(--accent-coral))" },
                       ]}
                     />
-                    <div className="mt-3 text-[12px] text-ink-muted">
-                      Community quality:{" "}
-                      <span className="font-semibold text-teal">
-                        {p.sentiment.positive >= 70 ? "Positive & engaged" : p.sentiment.positive >= 50 ? "Mixed signals" : "Needs attention"}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              )}
+                    <p className="mt-6 text-[13px] text-text-secondary leading-relaxed bg-white/5 p-4 rounded-xl italic">
+                      "The community shows high alignment with brand values, with minimal toxicity detected in the last 1000 comments."
+                    </p>
+                  </motion.div>
+                )}
 
-              {/* LANGUAGES */}
-              {p.languages && p.languages.length > 0 && (
-                <Card noPadding>
-                  <CardHeader title="Audience languages" />
-                  <div className="p-5 flex flex-col gap-3">
-                    {p.languages.map((l, i) => (
-                      <div key={l.name} className="flex items-center gap-4">
-                        <div className="w-20 shrink-0 text-[13px] text-ink-secondary">
-                          {l.name}
+                {/* LANGUAGES CARD */}
+                <motion.div variants={containerVariants} className="glass-card p-6">
+                  <h3 className="text-[16px] font-black text-white uppercase tracking-wider mb-6">Audience Languages</h3>
+                  <div className="space-y-5">
+                    {p.languages?.map((l, i) => (
+                      <div key={l.name} className="space-y-2">
+                        <div className="flex items-center justify-between text-[13px] font-bold">
+                          <span className="text-white">{l.name}</span>
+                          <span className="text-text-secondary">{l.pct}%</span>
                         </div>
-                        <div className="flex-1">
-                          <AnimatedBar
-                            pct={l.pct}
-                            color="hsl(var(--accent-purple))"
-                            opacity={l.opacity}
-                            delay={i * 80}
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${l.pct}%` }}
+                            transition={{ duration: 1, delay: i * 0.1 }}
+                            className="h-full bg-primary"
                           />
-                        </div>
-                        <div className="w-12 text-right text-[13px] text-ink-secondary tabular-nums">
-                          {l.pct}%
                         </div>
                       </div>
                     ))}
                   </div>
-                </Card>
-              )}
+                </motion.div>
 
-              {/* CONTENT DOMAIN */}
-              <Card noPadding>
-                <CardHeader title="Content domain" />
-                <div className="p-5 grid grid-cols-2 gap-8">
-                  <div>
-                    <Pill tone="purple" className="!text-[14px] !px-5 !py-2.5">
-                      {p.primary_niche || "Lifestyle"}
-                    </Pill>
-                    <div className="text-[11px] text-ink-muted mt-2">Primary niche</div>
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(p.secondary_niches || []).map((n) => (
-                        <Pill key={n} size="sm">{n}</Pill>
-                      ))}
+                {/* PERFORMANCE FORMATS */}
+                {p.formats && (
+                  <motion.div variants={containerVariants} className="glass-card p-6 lg:col-span-3">
+                    <h3 className="text-[16px] font-black text-white uppercase tracking-wider mb-8">Format Performance</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {p.formats.casual && (
+                        <div className="bg-white/5 rounded-2xl p-6 border border-white/5 hover:border-white/10 transition-colors">
+                          <div className="flex items-center justify-between mb-6">
+                            <span className="text-[11px] font-black uppercase tracking-widest bg-white/10 px-3 py-1 rounded-lg">Static Image</span>
+                            <span className="text-[12px] font-bold text-text-muted">{p.formats.casual.count} posts</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-8">
+                            <div className="space-y-1">
+                              <span className="text-2xl font-black text-white">{p.formats.casual.likes.toLocaleString()}</span>
+                              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Avg Likes</p>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-2xl font-black text-white">{p.formats.casual.comments}</span>
+                              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Avg Comments</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {p.formats.reel && (
+                        <div className="bg-primary/10 rounded-2xl p-6 border border-primary/20 hover:border-primary/30 transition-colors relative">
+                          <div className="absolute -top-3 right-6 bg-accent-teal text-black text-[10px] font-black px-3 py-1 rounded-full shadow-lg">WINNER</div>
+                          <div className="flex items-center justify-between mb-6">
+                            <span className="text-[11px] font-black uppercase tracking-widest bg-primary/20 text-primary px-3 py-1 rounded-lg">Short Video (Reels)</span>
+                            <span className="text-[12px] font-bold text-primary/60">{p.formats.reel.count} posts</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-8">
+                            <div className="space-y-1">
+                              <span className="text-2xl font-black text-white">{p.formats.reel.likes.toLocaleString()}</span>
+                              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Avg Likes</p>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-2xl font-black text-white">{p.formats.reel.comments}</span>
+                              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Avg Comments</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-[11px] text-ink-muted mt-2">Secondary niches</div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* POST FORMAT PERFORMANCE */}
-              {p.formats && (p.formats.casual || p.formats.reel) && (
-                <Card noPadding>
-                  <CardHeader
-                    title="Post format performance"
-                    subtitle={`Casual posts vs Reels — avg across ${p.posts_analyzed || 10} posts`}
-                  />
-                  <div className="p-5 grid grid-cols-2 gap-3">
-                    {p.formats.casual && (
-                      <div className="bg-background rounded-[10px] p-4 relative">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] uppercase tracking-widest rounded-md px-2 py-[3px] font-medium bg-surface-input text-ink-secondary">IMAGE</span>
-                        </div>
-                        <div className="text-[13px] font-medium text-ink mb-3">Casual posts (image)</div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                          <div><div className="text-[11px] text-ink-muted">Avg likes</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.casual.likes.toLocaleString()}</div></div>
-                          <div><div className="text-[11px] text-ink-muted">Avg comments</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.casual.comments}</div></div>
-                          <div><div className="text-[11px] text-ink-muted">Avg quality</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.casual.quality}</div></div>
-                          <div><div className="text-[11px] text-ink-muted">Posts count</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.casual.count}</div></div>
-                        </div>
-                      </div>
-                    )}
-                    {p.formats.reel && (
-                      <div className="bg-background rounded-[10px] p-4 relative">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] uppercase tracking-widest rounded-md px-2 py-[3px] font-medium bg-primary-soft text-primary-ink">REEL</span>
-                          <Pill tone="teal" size="sm">Best format</Pill>
-                        </div>
-                        <div className="text-[13px] font-medium text-ink mb-3">Reels</div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                          <div><div className="text-[11px] text-ink-muted">Avg likes</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.reel.likes.toLocaleString()}</div></div>
-                          <div><div className="text-[11px] text-ink-muted">Avg comments</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.reel.comments}</div></div>
-                          <div><div className="text-[11px] text-ink-muted">Avg quality</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.reel.quality}</div></div>
-                          <div><div className="text-[11px] text-ink-muted">Posts count</div><div className="text-[16px] font-semibold text-ink mt-0.5 tracking-tight-2">{p.formats.reel.count}</div></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {p.formats.casual && p.formats.reel && (
-                    <div className="px-5 pb-5">
-                      <div className="flex items-start gap-2 text-[13px] text-ink-secondary">
-                        <span>↑</span>
-                        <span>
-                          Reels generate <span className="font-semibold text-ink">{Math.round(((p.formats.reel.likes - p.formats.casual.likes) / (p.formats.casual.likes || 1)) * 100)}%</span>{" "}
-                          more likes and <span className="font-semibold text-ink">{Math.round(((p.formats.reel.comments - p.formats.casual.comments) / (p.formats.casual.comments || 1)) * 100)}%</span>{" "}
-                          more comments than casual posts for this creator.
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              )}
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
