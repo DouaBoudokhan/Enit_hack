@@ -591,9 +591,103 @@ async def _analyze_image_with_vision(image_base64: str) -> str:
     return response.choices[0].message.content or "A consumer product."
 
 
+async def _discover_influencers_via_ai(description: str, product_categories: dict) -> list[dict]:
+    """Use Azure OpenAI GPT to discover top Tunisian influencers for a product."""
+    from openai import AsyncAzureOpenAI
+    
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY", "")
+    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5.2-chat")
+    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
+    
+    if not endpoint or not api_key:
+        logger.warning("Azure OpenAI not configured, skipping AI discovery")
+        return []
+    
+    top_cats = sorted(product_categories.keys(), key=lambda c: product_categories[c], reverse=True)[:3]
+    cats_label = ", ".join(top_cats)
+    
+    client = AsyncAzureOpenAI(
+        azure_endpoint=endpoint,
+        api_key=api_key,
+        api_version=api_version,
+    )
+    
+    prompt = f"""You are a Tunisian influencer marketing expert. The user is looking for the best Tunisian influencers to promote a product.
+
+Product / Description: "{description}"
+Detected categories: {cats_label}
+
+Find 4-5 real, well-known Tunisian influencers on Instagram and/or TikTok who would be relevant for this type of product. Choose REAL influencers who are actually popular in Tunisia.
+
+CRITICAL RULES:
+1. Do NOT mention "oumaima.hamrouni_" or "samiramagroun" — they are already in our database.
+2. GENDER RELEVANCE: If the product is clearly for MEN (men's clothing, men's grooming, etc.), suggest MALE influencers only. If the product is for WOMEN (makeup, women's fashion, etc.), suggest FEMALE influencers. If the product is gender-neutral, mix both.
+3. PRIORITIZE these known Tunisian influencers when they match the category:
+   - Makeup / Beauty: Sarra Cherif (does makeup tutorials), Ons Hm
+   - Men's clothing / Men's fashion: Hamma Stories, Mehdi Mzeh, Mourad Rouge
+   Only include them if they are relevant to the product. You may add other real Tunisian influencers too.
+
+Respond ONLY with a valid JSON array, no markdown, no ```json, just raw JSON:
+[
+  {{
+    "name": "Full Name",
+    "instagram_handle": "@instagram_handle",
+    "tiktok_handle": "@tiktok_handle or null if no TikTok",
+    "instagram_followers": 150000,
+    "tiktok_followers": 200000,
+    "category": "Beauty",
+    "reason": "Short explanation in English of why this influencer is relevant (1-2 sentences max)"
+  }}
+]
+
+Use realistic follower estimates. If unsure about TikTok, set to null."""
+
+    try:
+        response = await client.chat.completions.create(
+            model=deployment,
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=1500,
+        )
+        
+        raw = response.choices[0].message.content or "[]"
+        # Clean up: strip markdown code fences if present
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+        if raw.endswith("```"):
+            raw = raw[:-3]
+        raw = raw.strip()
+        
+        discovered = json.loads(raw)
+        if not isinstance(discovered, list):
+            return []
+        
+        # Normalize and validate each entry
+        results = []
+        for d in discovered[:5]:
+            results.append({
+                "name": d.get("name", "Unknown"),
+                "handle": d.get("instagram_handle", "@unknown"),
+                "tiktok_handle": d.get("tiktok_handle"),
+                "initials": "".join(w[0] for w in d.get("name", "U").split() if w)[:2].upper(),
+                "category": d.get("category", "Lifestyle"),
+                "instagram_followers": d.get("instagram_followers", 0),
+                "tiktok_followers": d.get("tiktok_followers", 0),
+                "reason": d.get("reason", "Relevant influencer for your product."),
+                "has_audit": False,
+                "domain": [d.get("category", "Lifestyle")],
+            })
+        
+        return results
+    except Exception as e:
+        logger.error(f"AI influencer discovery failed: {e}")
+        return []
+
+
 @app.post("/api/product-match")
 async def product_match(request: ProductMatchRequest):
-    """Match a product description (or image) against influencer reports."""
+    """Match a product description (or image) against audited influencers + AI-discovered ones."""
     
     description = request.description or ""
     
@@ -612,11 +706,15 @@ async def product_match(request: ProductMatchRequest):
     
     # Detect product categories
     product_categories = _detect_product_categories(description)
+    top_cats = sorted(product_categories.keys(), key=lambda c: product_categories[c], reverse=True)
+    top_cat_label = top_cats[0].capitalize() if top_cats else "lifestyle"
     
-    # Load all reports and score each influencer
+    # ══════════════════════════════════════════════════════════
+    # 1. AUDITED influencers (Samira & Oumaima — from local reports)
+    # ══════════════════════════════════════════════════════════
     reports_dir = BASE_DIR / "sm_crew"
     pulse_data = _load_pulse_dataset()
-    matches = []
+    audited_matches = []
     
     if reports_dir.exists():
         for file_path in reports_dir.glob("*_report.md"):
@@ -626,80 +724,72 @@ async def product_match(request: ProductMatchRequest):
                     content = f.read()
                 
                 parsed = _parse_report_md(content, handle, pulse_data)
-                parsed["_content"] = content  # pass content for keyword overlap
+                parsed["_content"] = content
                 
                 scoring = _score_influencer_match(parsed, product_categories, description)
                 
                 name = parsed.get("full_name") or handle.replace(".", " ").replace("_", " ").title()
-                # Clean name: remove Arabic part after |
                 if "|" in name:
                     name = name.split("|")[0].strip()
                 
                 all_niches = [parsed.get("primary_niche", "Lifestyle")] + parsed.get("secondary_niches", [])
                 
-                matches.append({
+                # Generate reason
+                score = round(scoring["score"])
+                niche = parsed.get("primary_niche", "Lifestyle").lower()
+                if score >= 70:
+                    reason = (f"{name}'s {niche} content and engaged audience "
+                              f"({parsed.get('sentiment', {}).get('positive', 0):.0f}% positive sentiment) "
+                              f"make them an excellent fit for a {top_cat_label} product.")
+                elif score >= 50:
+                    reason = (f"{name}'s {niche} audience has good overlap with the {top_cat_label} space, "
+                              f"offering moderate brand alignment and visibility.")
+                else:
+                    reason = (f"{name} primarily creates {niche} content. "
+                              f"Limited thematic overlap with {top_cat_label} but their engaged audience can still provide reach.")
+                
+                audited_matches.append({
                     "name": name,
                     "handle": f"@{handle}",
+                    "tiktok_handle": None,
                     "initials": "".join(w[0] for w in name.split() if w)[:2].upper(),
                     "category": parsed.get("primary_niche", "Lifestyle"),
-                    "match": round(scoring["score"]),
+                    "match": score,
                     "cqs": parsed.get("cqs", 0),
                     "domain": all_niches[:3],
                     "followers": parsed.get("followers", 0),
+                    "instagram_followers": parsed.get("followers", 0),
+                    "tiktok_followers": 0,
                     "engagement_rate": parsed.get("engagement_rate", 0),
                     "sentiment_positive": parsed.get("sentiment", {}).get("positive", 0),
-                    "reason": "",  # will be generated below
+                    "reason": reason,
+                    "has_audit": True,
+                    "best": False,
                 })
             except Exception as e:
                 logger.error(f"Failed to process {file_path} for matching: {e}")
     
-    # Sort by match score descending
-    matches.sort(key=lambda x: x["match"], reverse=True)
+    # Sort audited by score
+    audited_matches.sort(key=lambda x: x["match"], reverse=True)
+    if audited_matches and audited_matches[0]["match"] >= 50:
+        audited_matches[0]["best"] = True
     
-    # Generate context-aware reasons based on actual scores
-    if matches:
-        top_cats = sorted(product_categories.keys(), key=lambda c: product_categories[c], reverse=True)
-        top_cat_label = top_cats[0].capitalize() if top_cats else "lifestyle"
-        
-        # Only mark as "best" if top score is actually good (>= 50%)
-        if matches[0]["match"] >= 50:
-            matches[0]["best"] = True
-        
-        for m in matches:
-            score = m["match"]
-            name = m["name"]
-            niche = m["category"].lower()
-            
-            if score >= 70:
-                m["reason"] = (
-                    f"{name}'s {niche} content and engaged audience "
-                    f"({m['sentiment_positive']:.0f}% positive sentiment) make them an excellent fit for a {top_cat_label} product."
-                )
-            elif score >= 50:
-                m["reason"] = (
-                    f"{name}'s {niche} audience has some overlap with the {top_cat_label} space, "
-                    f"offering moderate brand alignment and visibility."
-                )
-            elif score >= 30:
-                m["reason"] = (
-                    f"{name} primarily creates {niche} content. Limited thematic overlap with a "
-                    f"{top_cat_label} product, though their engaged audience could still provide some reach."
-                )
-            else:
-                m["reason"] = (
-                    f"{name}'s {niche} niche has very little relevance to the {top_cat_label} category. "
-                    f"This influencer is not recommended for this product."
-                )
+    # ══════════════════════════════════════════════════════════
+    # 2. AI-DISCOVERED influencers (via Azure GPT)
+    # ══════════════════════════════════════════════════════════
+    discovered = await _discover_influencers_via_ai(description, product_categories)
     
-    for m in matches:
-        if not m.get("best"):
-            m["best"] = False
+    # ══════════════════════════════════════════════════════════
+    # 3. Merge: audited first, then discovered
+    # ══════════════════════════════════════════════════════════
+    all_matches = audited_matches + discovered
     
     return {
         "description": description,
         "categories": product_categories,
-        "matches": matches,
+        "matches": all_matches,
     }
+
 
 @app.get("/api/analyzed-posts")
 def list_analyzed_posts():
@@ -1157,6 +1247,66 @@ async def proxy_image(url: str):
         return RedirectResponse("https://placehold.co/600x400/1E1E2E/A6ADC8?text=Image+Expired")
 
 
+import sys
+import queue
+import asyncio
+import re
+from fastapi.responses import StreamingResponse
+
+# Global list of active log queues for SSE
+active_crew_streams = []
+
+class BroadcastStdout:
+    def __init__(self, original_stdout):
+        self.original_stdout = original_stdout
+        
+    def write(self, buf):
+        self.original_stdout.write(buf)
+        try:
+            # Send line by line to all connected clients
+            for line in buf.splitlines():
+                if line.strip():
+                    # Clean up ANSI escape codes (colors) from terminal output
+                    clean_line = re.sub(r'\x1B\[[0-?]*[ -/]*[@-~]', '', line).strip()
+                    if clean_line:
+                        for q in active_crew_streams:
+                            try:
+                                q.put_nowait(clean_line)
+                            except queue.Full:
+                                pass
+        except Exception:
+            pass
+
+    def flush(self):
+        self.original_stdout.flush()
+
+@app.get("/api/investigate-logs")
+async def stream_investigate_logs():
+    """SSE Endpoint to stream CrewAI terminal logs to the frontend."""
+    q = queue.Queue(maxsize=100)
+    active_crew_streams.append(q)
+    
+    async def event_generator():
+        try:
+            while True:
+                try:
+                    # Non-blocking get with short timeout
+                    line = await asyncio.to_thread(q.get, timeout=0.5)
+                    if line is None:  # Sentinel value indicating completion
+                        yield f"event: done\ndata: Investigation complete\n\n"
+                        break
+                    yield f"data: {line}\n\n"
+                except queue.Empty:
+                    # Keep connection alive
+                    yield ": keepalive\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            if q in active_crew_streams:
+                active_crew_streams.remove(q)
+                
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 class InvestigateRequest(BaseModel):
     influencer_name: str
     specific_query: str
@@ -1176,12 +1326,24 @@ async def investigate_influencer(req: InvestigateRequest):
     try:
         def _run_crew():
             from sm_crew.src.sm_crew.voice_crew import VoiceInvestigationCrew
-            crew_instance = VoiceInvestigationCrew()
-            result = crew_instance.crew().kickoff(inputs={
-                "influencer_name": name,
-                "specific_query": query
-            })
-            return str(result)
+            
+            old_stdout = sys.stdout
+            sys.stdout = BroadcastStdout(old_stdout)
+            try:
+                crew_instance = VoiceInvestigationCrew()
+                result = crew_instance.crew().kickoff(inputs={
+                    "influencer_name": name,
+                    "specific_query": query
+                })
+                return str(result)
+            finally:
+                sys.stdout = old_stdout
+                # Broadcast termination sentinel
+                for q in active_crew_streams:
+                    try:
+                        q.put_nowait(None)
+                    except queue.Full:
+                        pass
 
         report = await asyncio.to_thread(_run_crew)
         logger.info(f"[VOICE-CREW] Investigation complete for: {name.encode('utf-8', 'ignore').decode('utf-8')}")

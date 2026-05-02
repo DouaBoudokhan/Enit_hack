@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, X, Loader2, Volume2, Ear, Search } from "lucide-react";
 import { useRealtimeAudio } from "@/hooks/useRealtimeAudio";
@@ -6,6 +6,31 @@ import { useRealtimeAudio } from "@/hooks/useRealtimeAudio";
 export function VoiceWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const { state, connect, disconnect } = useRealtimeAudio();
+  const [logs, setLogs] = useState<string[]>([]);
+  const terminalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (state === "investigating") {
+      setLogs([]);
+      const eventSource = new EventSource("http://localhost:8000/api/investigate-logs");
+      
+      eventSource.onmessage = (event) => {
+        setLogs((prev) => [...prev, event.data].slice(-100));
+      };
+      
+      eventSource.addEventListener("done", () => {
+        eventSource.close();
+      });
+      
+      return () => eventSource.close();
+    }
+  }, [state]);
+
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   const handleToggle = () => {
     if (isOpen) {
@@ -85,8 +110,8 @@ export function VoiceWidget() {
                   <span className="text-[18px] font-black text-white tracking-tight">
                     {state === "connecting" ? "Synchronizing..." :
                      state === "investigating" ? "Intelligence Gathering..." :
-                     state === "speaking" ? "Sarra is speaking" : 
-                     state === "error" ? "System Interrupted" : "Sarra is listening"}
+                     state === "speaking" ? "Our Agent is speaking" : 
+                     state === "error" ? "System Interrupted" : "Our Agent is listening"}
                   </span>
                   <div className="flex items-center justify-center gap-2">
                     <div className={`w-1.5 h-1.5 rounded-full ${state === 'listening' ? 'bg-accent-teal animate-pulse' : 'bg-white/20'}`} />
@@ -96,6 +121,27 @@ export function VoiceWidget() {
                        state === "speaking" ? "Outputting Audio" : "Ready"}
                     </span>
                   </div>
+                  
+                  {/* CrewAI Live Terminal */}
+                  <AnimatePresence>
+                    {state === "investigating" && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 160 }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="w-full mt-4 bg-[#0d0d0d] border border-white/10 shadow-inner rounded-lg p-3 overflow-y-auto text-left font-mono text-[11px] text-[#00ffcc] leading-relaxed relative"
+                        ref={terminalRef}
+                      >
+                        <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[#0d0d0d] to-transparent z-10 pointer-events-none" />
+                        <div className="pt-2">
+                          {logs.map((log, i) => (
+                            <div key={i} className="mb-1 opacity-90 break-words whitespace-pre-wrap">{log}</div>
+                          ))}
+                          <div className="animate-pulse mt-1 inline-block bg-[#00ffcc] w-2 h-3" />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>

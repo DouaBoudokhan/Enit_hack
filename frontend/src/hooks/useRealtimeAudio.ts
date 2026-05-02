@@ -75,10 +75,10 @@ export function useRealtimeAudio() {
       type: "session.update",
       session: {
         voice: "alloy", // expresssive voice
-        instructions: "Tu es 'Sarra', l'assistant IA tunisien le plus cool, amical et dynamique. Tu es le 'Digital Friend' de l'utilisateur. \n\nPERSONNALITÉ :\n- Ton : Chaleureux, complice, un peu impertinent (humour tunisien), et très réactif.\n- Langue : Parle principalement en Derja tunisienne mixée avec du français (le 'parler tunisien' naturel). \n- Style : Utilise des expressions comme 'Behi sahabi', 'Asmaa asmaa', 'Yaatik saha', 'Mela lz'. \n- Réaction au bruit : Si tu entends du bruit bizarre, ne réagis pas, attends que l'utilisateur te parle clairement.\n\nCOMPORTEMENT VOIX & ÉMOTIONS :\n- Sois expressif : Ris si l'utilisateur dit quelque chose de drôle. \n- Interruption : Si l'utilisateur te coupe, arrête-toi tout de suite gentiment.\n- Temps de réflexion : Si tu dois faire une recherche, ne reste pas silencieux. Dis quelque chose de naturel en Derja avant d'appeler l'outil (ex: 'D'accord, khalini nthabetlek chwaya...', 'Ok, hani nlawejlek, asber aalia dkihka...').\n\nMISSION : Tu aides l'utilisateur à analyser le monde des influenceurs tunisiens. Sois un expert mais reste ton ami.\n\nIMPORTANT : Tu DOIS TOUJOURS donner une confirmation vocale AVANT de lancer l'outil 'investigate_influencer'. Ne lance jamais la recherche en silence.",
+        instructions: "You are 'Our Agent', the coolest, friendliest, and most dynamic Tunisian AI assistant. You are the user's 'Digital Friend'.\n\nPERSONALITY:\n- Tone: Warm, helpful, slightly witty, and very responsive.\n- Language: Speak mainly in English, but you can mix in some Tunisian Arabic (Derja) expressions for flavor (e.g., 'Behi', 'Yaatik saha').\n- Style: Professional yet friendly. You are an expert in Tunisian influencer intelligence.\n\nBEHAVIOR:\n- If the user interrupts you, stop immediately.\n- If you need to perform a search, don't stay silent. Say something like 'Sure, let me check that for you...' before calling the tool.\n\nMISSION: You help the user analyze the world of Tunisian influencers. Be an expert but stay their friend.\n\nIMPORTANT: You MUST ALWAYS give a vocal confirmation BEFORE launching the 'investigate_influencer' tool.",
         turn_detection: {
           type: "server_vad",
-          threshold: 0.75, // Better noise rejection for street/background noise
+          threshold: 0.5, // More sensitive speech detection
           prefix_padding_ms: 300,
           silence_duration_ms: 850 // More relaxed conversational pace for dialectal pauses
         },
@@ -107,13 +107,15 @@ export function useRealtimeAudio() {
 
   const startPlayback = useCallback((base64Audio: string) => {
     if (!playbackContextRef.current) {
+      // Fallback, but it should ideally be created in startMic
       playbackContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       nextPlayTimeRef.current = playbackContextRef.current.currentTime;
     }
     const ctx = playbackContextRef.current;
     
+    // Explicitly resume to bypass autoplay restrictions
     if (ctx.state === "suspended") {
-      ctx.resume();
+      ctx.resume().catch(e => console.error("Could not resume audio context:", e));
     }
 
     const float32Data = base64Pcm16ToFloat32(base64Audio);
@@ -164,19 +166,31 @@ export function useRealtimeAudio() {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       audioContextRef.current = ctx;
 
+      // Initialize playback context here to bind it to the user gesture (click)
+      if (!playbackContextRef.current) {
+        playbackContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        nextPlayTimeRef.current = playbackContextRef.current.currentTime;
+      }
+
       const source = ctx.createMediaStreamSource(stream);
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
-        // Mute the microphone during investigation
         if (stateRef.current === "investigating") return;
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
         
+        // Ensure context is running (fixes issues where it starts suspended)
+        if (ctx.state === "suspended") ctx.resume();
+
         const inputData = e.inputBuffer.getChannelData(0);
         
-        // Very basic silence detection (optional, but server_vad handles it)
-        // We just send everything when listening.
+        // Debug: Log if we are getting actual audio levels (not just silence)
+        const maxVal = Math.max(...Array.from(inputData).map(Math.abs));
+        if (maxVal > 0.05) {
+           console.log("[Voice] 🎙️ Audio activity detected, max level:", maxVal.toFixed(3));
+        }
+
         const base64Audio = float32ToPcm16Base64(inputData);
         
         wsRef.current.send(JSON.stringify({
@@ -202,12 +216,16 @@ export function useRealtimeAudio() {
       return;
     }
 
+    console.log("[Voice] Connecting to Azure Realtime...");
+    console.log("[Voice] Endpoint:", ENDPOINT);
+    console.log("[Voice] Deployment:", DEPLOYMENT);
     setState("connecting");
     stateRef.current = "connecting";
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      console.log("[Voice] ✅ WebSocket connected!");
       setState("listening");
       stateRef.current = "listening";
       initSession();
@@ -216,7 +234,17 @@ export function useRealtimeAudio() {
 
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
+      // Log all message types for debugging
+      if (msg.type !== "response.audio.delta" && msg.type !== "input_audio_buffer.append") {
+        console.log("[Voice] 📩 Received:", msg.type, msg.type === "error" ? msg.error : "");
+      }
       switch(msg.type) {
+        case "session.created":
+          console.log("[Voice] ✅ Session created successfully");
+          break;
+        case "session.updated":
+          console.log("[Voice] ✅ Session configured");
+          break;
         case "response.audio.delta":
           if (msg.delta) {
             setState("speaking");
@@ -225,7 +253,7 @@ export function useRealtimeAudio() {
           }
           break;
         case "input_audio_buffer.speech_started":
-          // User started talking, interrupt the AI playback!
+          console.log("[Voice] 🎤 Speech detected!");
           interruptPlayback();
           setState("listening");
           stateRef.current = "listening";
@@ -274,18 +302,19 @@ export function useRealtimeAudio() {
           }
           break;
         case "error":
-          console.error("Azure OpenAI Error:", msg.error);
+          console.error("[Voice] ❌ Azure OpenAI Error:", msg.error);
           break;
       }
     };
 
     ws.onerror = (e) => {
-      console.error("WebSocket Error:", e);
+      console.error("[Voice] ❌ WebSocket Error:", e);
       setState("error");
       disconnect();
     };
 
-    ws.onclose = () => {
+    ws.onclose = (e) => {
+      console.log("[Voice] WebSocket closed. Code:", e.code, "Reason:", e.reason);
       disconnect();
     };
   }, [initSession, startMic, startPlayback, interruptPlayback, disconnect]);

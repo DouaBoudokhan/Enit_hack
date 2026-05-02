@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  /* ══════════════════════════════════════════════════════════════
+     DARK MODE (default)
+     ══════════════════════════════════════════════════════════════ */
   :root {
     /* Sophisticated Dark Surfaces */
     --background: 240 10% 2%;        /* Deepest slate black */
@@ -53,14 +56,83 @@
     --ring: var(--accent-purple);
     --radius: 1rem;
 
-    /* Advanced Glass Shadow */
+    /* Glass */
     --shadow-glass: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+
+    /* Theme-aware utility tokens */
+    --glass-bg: rgba(14, 14, 17, 0.6);
+    --glass-bg-hover: rgba(18, 18, 22, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-border-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-bg: rgba(255, 255, 255, 0.02);
+    --topbar-bg: rgba(0, 0, 0, 0.4);
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     LIGHT MODE
+     ══════════════════════════════════════════════════════════════ */
+  .light {
+    /* Clean, warm white surfaces */
+    --background: 220 20% 97%;
+    --surface: 0 0% 100%;
+    --surface-raised: 220 14% 96%;
+    --surface-input: 220 14% 93%;
+
+    /* Subtle, refined borders */
+    --border-default: 220 10% 88%;
+    --border-strong: 220 10% 78%;
+    --line: 220 10% 90%;
+
+    /* Dark text on light */
+    --text-primary: 220 20% 10%;
+    --text-secondary: 220 10% 42%;
+    --text-muted: 220 8% 58%;
+
+    /* Slightly deeper accents for light mode legibility */
+    --accent-purple: 263 85% 55%;
+    --accent-teal: 162 90% 38%;
+    --accent-coral: 354 80% 55%;
+    --accent-amber: 45 95% 48%;
+
+    /* Shadcn overrides */
+    --foreground: var(--text-primary);
+    --card: var(--surface);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--accent-purple);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--surface-input);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--surface-input);
+    --muted-foreground: var(--text-secondary);
+    --accent: var(--surface-input);
+    --accent-foreground: var(--text-primary);
+    --destructive: var(--accent-coral);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--border-default);
+    --input: var(--border-default);
+
+    --shadow-glass: 0 4px 24px -6px rgba(0, 0, 0, 0.08);
+
+    /* Theme-aware utility tokens */
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-bg-hover: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-border-hover: rgba(0, 0, 0, 0.1);
+    --sidebar-bg: rgba(0, 0, 0, 0.02);
+    --topbar-bg: rgba(255, 255, 255, 0.6);
   }
 }
 
 @layer base {
   * {
-    @apply border-border selection:bg-primary/30 selection:text-white;
+    @apply border-border;
+  }
+
+  ::selection {
+    background: hsl(var(--accent-purple) / 0.25);
+    color: hsl(var(--text-primary));
   }
 
   html, body, #root {
@@ -75,10 +147,22 @@
     -webkit-font-smoothing: antialiased;
     font-size: 14px;
     line-height: 1.6;
+  }
+
+  /* Dark mode body gradient */
+  :root body {
     background-image: 
       radial-gradient(at 0% 0%, hsla(263, 90%, 65%, 0.08) 0px, transparent 40%),
       radial-gradient(at 100% 100%, hsla(162, 100%, 48%, 0.08) 0px, transparent 40%),
       radial-gradient(at 50% 50%, hsla(354, 85%, 65%, 0.03) 0px, transparent 60%);
+    background-attachment: fixed;
+  }
+
+  /* Light mode body gradient — much more subtle */
+  .light body {
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(263, 85%, 55%, 0.04) 0px, transparent 40%),
+      radial-gradient(at 100% 100%, hsla(162, 90%, 38%, 0.04) 0px, transparent 40%);
     background-attachment: fixed;
   }
 
@@ -88,21 +172,34 @@
 }
 
 @layer components {
+  /* ── Glass Card ── */
   .glass-card {
-    @apply bg-[#0e0e11]/60 backdrop-blur-2xl border border-white/5 rounded-2xl transition-all duration-300;
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    transition: all 0.3s;
     box-shadow: var(--shadow-glass);
   }
   
   .glass-card:hover {
-    @apply border-white/10 bg-[#121216]/70;
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-hover);
   }
 
   .glass-input {
-    @apply bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all placeholder:text-text-muted;
+    @apply bg-surface-input border border-line rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all;
+    color: hsl(var(--text-primary));
+  }
+  .glass-input::placeholder {
+    color: hsl(var(--text-muted));
   }
 
   .pill {
-    @apply inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-black tracking-widest uppercase border border-white/5 bg-white/5;
+    @apply inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-black tracking-widest uppercase border;
+    border-color: var(--glass-border);
+    background: var(--glass-border);
   }
 
   .logo-glow {
@@ -118,12 +215,13 @@
 
   /* shimmer for skeletons */
   .skeleton {
-    @apply rounded-xl bg-white/5 relative overflow-hidden;
+    @apply rounded-xl relative overflow-hidden;
+    background: hsl(var(--surface-input));
   }
   .skeleton::after {
     content: "";
     @apply absolute inset-0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+    background: linear-gradient(90deg, transparent, hsl(var(--text-muted) / 0.05), transparent);
     transform: translateX(-100%);
     animation: shimmer 2s infinite;
   }
@@ -140,7 +238,11 @@
     @apply bg-transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+    border-radius: 9999px;
+    background: hsl(var(--text-muted) / 0.2);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--text-muted) / 0.35);
   }
 }
 

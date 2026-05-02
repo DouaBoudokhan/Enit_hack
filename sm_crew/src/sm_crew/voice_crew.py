@@ -11,12 +11,27 @@ import os
 
 from azure_config import normalize_azure_endpoint
 
-# Force proper Azure endpoint format
-from azure_config import normalize_azure_endpoint
-os.environ["AZURE_API_BASE"] = normalize_azure_endpoint(os.environ.get("AZURE_API_BASE"))
+# CrewAI uses roua10 endpoint with gpt-5.4-nano (from .env)
+#   model=azure/gpt-5.4-nano
+#   AZURE_API_BASE=https://roua10.cognitiveservices.azure.com/
+#   AZURE_API_KEY=...
+endpoint = normalize_azure_endpoint(os.environ.get("AZURE_API_BASE", ""))
+api_key = os.environ.get("AZURE_API_KEY", "")
+api_version = os.environ.get("AZURE_API_VERSION", "2025-04-01-preview")
+
+# Extract deployment name from model=azure/gpt-5.4-nano
+model_env = os.environ.get("model", "azure/gpt-5.4-nano")
+deployment_name = model_env.split("/")[1] if "/" in model_env else model_env
+
+# Override all AZURE_OPENAI_* env vars so the underlying azure-ai-inference SDK
+# builds the correct deployment URL for the roua10 resource
+os.environ["AZURE_OPENAI_ENDPOINT"] = endpoint
+os.environ["AZURE_OPENAI_API_KEY"] = api_key
+os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"] = deployment_name
+os.environ["AZURE_OPENAI_API_VERSION"] = api_version
 
 custom_llm = LLM(
-    model=os.environ.get("model", "azure/gpt-4o"),
+    model=model_env,
     temperature=0.1
 )
 

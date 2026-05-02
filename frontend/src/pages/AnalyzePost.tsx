@@ -4,7 +4,7 @@ import { Pill } from "@/components/Pill";
 import { AnimatedBar, StackedBar } from "@/components/Bars";
 import { CountNumber } from "@/components/CountNumber";
 import { Link2, MessageSquare, Heart, Eye, Sparkles, Send, Bookmark, MoreHorizontal, CheckCircle2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -123,10 +123,10 @@ export default function AnalyzePost() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-10"
       >
-        <h1 className="text-3xl font-black text-white tracking-tighter mb-2">
+        <h1 className="text-3xl font-black text-ink tracking-tighter mb-2">
           Post Intelligence Audit
         </h1>
-        <p className="text-[15px] text-text-secondary max-w-lg leading-relaxed">
+        <p className="text-[15px] text-ink-secondary max-w-lg leading-relaxed">
           Deep sentiment mapping and community quality analysis for any social media post.
         </p>
       </motion.div>
@@ -140,12 +140,12 @@ export default function AnalyzePost() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Paste Instagram or TikTok URL..."
-            className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-text-muted font-medium text-[16px]"
+            className="flex-1 bg-transparent border-none outline-none text-ink placeholder:text-ink-muted font-medium text-[16px]"
           />
           <button
             type="submit"
             disabled={loading}
-            className="bg-primary text-black font-black text-[14px] px-6 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-50"
+            className="bg-primary text-white font-black text-[14px] px-6 py-2 rounded-xl active:scale-95 transition-all disabled:opacity-50"
           >
             {loading ? "PROCESSING..." : "ANALYZE"}
           </button>
@@ -178,8 +178,8 @@ export default function AnalyzePost() {
             />
             <div className="w-16 h-16 border-2 border-white/5 border-t-primary rounded-full animate-spin" />
           </div>
-          <p className="text-[16px] font-bold text-white tracking-wide animate-pulse">
-            Sarra is visiting the post & mapping community sentiment...
+          <p className="text-[16px] font-bold text-ink tracking-wide animate-pulse">
+            Our Agent is visiting the post & mapping community sentiment...
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-12 opacity-40 grayscale">
              <div className="glass-card h-64" />
@@ -220,7 +220,7 @@ export default function AnalyzePost() {
               <div className="flex items-center justify-between p-4 border-b border-white/5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-accent-amber via-accent-coral to-primary p-[2px]">
-                    <div className="w-full h-full rounded-full border-2 border-[#111112] overflow-hidden bg-white/5">
+                    <div className="w-full h-full rounded-full border-2 border-background overflow-hidden bg-surface-input">
                       <img 
                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${r.influencer?.handle}`} 
                         alt="avatar" 
@@ -229,19 +229,19 @@ export default function AnalyzePost() {
                     </div>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[14px] font-bold text-white tracking-tight leading-none">
+                    <span className="text-[14px] font-bold text-ink tracking-tight leading-none">
                       {r.influencer?.handle || "unknown"}
                     </span>
-                    <span className="text-[11px] text-text-muted mt-1 flex items-center gap-1 font-bold">
+                    <span className="text-[11px] text-ink-muted mt-1 flex items-center gap-1 font-bold">
                       <Sparkles size={10} className="text-primary" /> AUDIT ACTIVE
                     </span>
                   </div>
                 </div>
-                <MoreHorizontal size={20} className="text-text-muted" />
+                <MoreHorizontal size={20} className="text-ink-muted" />
               </div>
 
               {/* Post Image/Video */}
-              <div className="bg-white/5 min-h-[300px] flex items-center justify-center relative group">
+              <div className="bg-surface-input min-h-[300px] flex items-center justify-center relative group">
                 {r.post.display_url ? (
                   <img 
                     src={`http://localhost:8000/api/proxy-image?url=${encodeURIComponent(r.post.display_url)}`}
@@ -252,18 +252,18 @@ export default function AnalyzePost() {
                     }}
                   />
                 ) : (
-                  <div className="text-sm text-text-muted p-12 text-center font-bold">
+                  <div className="text-sm text-ink-muted p-12 text-center font-bold">
                     [ VISUAL DATA UNAVAILABLE ]
                   </div>
                 )}
-                <div className="absolute top-4 right-4 bg-black/60 text-white text-[11px] font-black px-3 py-1.5 rounded-lg flex items-center gap-2 backdrop-blur-md border border-white/10 uppercase tracking-widest">
+                <div className="absolute top-4 right-4 bg-black/60 text-white text-[11px] font-black px-3 py-1.5 rounded-lg flex items-center gap-2 backdrop-blur-md border border-line uppercase tracking-widest">
                   {r.post.media_type === "video" ? <><Eye size={12} /> REEL</> : "POST"}
                 </div>
               </div>
 
               {/* Post Actions */}
               <div className="p-5">
-                <div className="flex items-center justify-between mb-4 text-white">
+                <div className="flex items-center justify-between mb-4 text-ink">
                   <div className="flex items-center gap-5">
                     <Heart size={26} className="hover:text-accent-coral cursor-pointer transition-colors" />
                     <MessageSquare size={26} className="hover:text-primary cursor-pointer transition-colors" />
@@ -271,14 +271,14 @@ export default function AnalyzePost() {
                   </div>
                   <Bookmark size={26} className="hover:text-accent-amber cursor-pointer transition-colors" />
                 </div>
-                <div className="text-[15px] font-black text-white mb-2 tracking-tight">
-                  {(r.post.likes_count ?? 0).toLocaleString()} <span className="font-bold text-text-secondary text-[14px] ml-1">likes</span>
+                <div className="text-[15px] font-black text-ink mb-2 tracking-tight">
+                  {(r.post.likes_count ?? 0).toLocaleString()} <span className="font-bold text-ink-secondary text-[14px] ml-1">likes</span>
                 </div>
-                <div className="text-[14px] text-white leading-relaxed mb-4">
+                <div className="text-[14px] text-ink leading-relaxed mb-4">
                   <span className="font-black mr-2">{r.influencer?.handle || "unknown"}</span>
-                  <span className="text-text-secondary font-medium">{r.post.enriched_content}</span>
+                  <span className="text-ink-secondary font-medium">{r.post.enriched_content}</span>
                 </div>
-                <div className="text-[13px] font-bold text-primary cursor-pointer hover:text-white transition-colors">
+                <div className="text-[13px] font-bold text-primary cursor-pointer hover:text-ink transition-colors">
                   View all {(r.post.comments_count ?? 0).toLocaleString()} comments
                 </div>
               </div>
@@ -290,23 +290,23 @@ export default function AnalyzePost() {
             {/* Sentiment breakdown */}
             {r.sentiment && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="glass-card p-8">
-                <h3 className="text-[16px] font-black text-white uppercase tracking-wider mb-8 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-accent-teal animate-pulse" />
+                <h3 className="text-[16px] font-black text-ink uppercase tracking-wider mb-8 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-teal animate-pulse" />
                   Sentiment Breakdown
                 </h3>
                 
                 <div className="grid grid-cols-3 gap-8 mb-10">
                   <div className="space-y-1">
-                    <span className="text-4xl font-black text-accent-teal leading-none">{r.sentiment.positive}%</span>
-                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Positive</p>
+                    <span className="text-4xl font-black text-teal leading-none">{r.sentiment.positive}%</span>
+                    <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest">Positive</p>
                   </div>
-                  <div className="space-y-1 border-x border-white/5 px-8">
-                    <span className="text-4xl font-black text-accent-amber leading-none">{r.sentiment.neutral}%</span>
-                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Neutral</p>
+                  <div className="space-y-1 border-x border-line px-8">
+                    <span className="text-4xl font-black text-amber leading-none">{r.sentiment.neutral}%</span>
+                    <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest">Neutral</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-4xl font-black text-accent-coral leading-none">{r.sentiment.negative}%</span>
-                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Negative</p>
+                    <span className="text-4xl font-black text-coral leading-none">{r.sentiment.negative}%</span>
+                    <p className="text-[10px] font-bold text-ink-muted uppercase tracking-widest">Negative</p>
                   </div>
                 </div>
                 
@@ -319,13 +319,13 @@ export default function AnalyzePost() {
                 />
 
                 <div className="grid grid-cols-2 gap-4 mt-10">
-                  <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Avg Quality</p>
-                    <p className="text-2xl font-black text-white">{r.sentiment.avg_quality}<span className="text-[14px] text-text-muted ml-1">/ 10</span></p>
+                  <div className="bg-surface-input rounded-2xl p-5 border border-line">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-ink-muted mb-2">Avg Quality</p>
+                    <p className="text-2xl font-black text-ink">{r.sentiment.avg_quality}<span className="text-[14px] text-ink-muted ml-1">/ 10</span></p>
                   </div>
-                  <div className="bg-white/5 rounded-2xl p-5 border border-white/5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Toxicity</p>
-                    <p className="text-2xl font-black text-accent-coral">{r.sentiment.toxicity_rate}%</p>
+                  <div className="bg-surface-input rounded-2xl p-5 border border-line">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-ink-muted mb-2">Toxicity</p>
+                    <p className="text-2xl font-black text-coral">{r.sentiment.toxicity_rate}%</p>
                   </div>
                 </div>
               </motion.div>
@@ -334,15 +334,15 @@ export default function AnalyzePost() {
             {/* Language breakdown */}
             {r.language_breakdown && r.language_breakdown.length > 0 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="glass-card p-8">
-                <h3 className="text-[16px] font-black text-white uppercase tracking-wider mb-8">Audience Linguistics</h3>
+                <h3 className="text-[16px] font-black text-ink uppercase tracking-wider mb-8">Audience Linguistics</h3>
                 <div className="space-y-6">
                   {r.language_breakdown.map((l, i) => (
                     <div key={l.language} className="space-y-2">
                       <div className="flex items-center justify-between text-[13px] font-bold">
-                        <span className="text-white uppercase tracking-wider">{l.language}</span>
-                        <span className="text-text-secondary">{l.percentage}%</span>
+                        <span className="text-ink uppercase tracking-wider">{l.language}</span>
+                        <span className="text-ink-secondary">{l.percentage}%</span>
                       </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-2 w-full bg-surface-input rounded-full overflow-hidden">
                         <motion.div 
                           initial={{ width: 0 }}
                           animate={{ width: `${l.percentage}%` }}
@@ -359,7 +359,7 @@ export default function AnalyzePost() {
             {/* Individual comments */}
             {r.comments && r.comments.length > 0 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="glass-card p-8">
-                <h3 className="text-[16px] font-black text-white uppercase tracking-wider mb-8">Notable Comments</h3>
+                <h3 className="text-[16px] font-black text-ink uppercase tracking-wider mb-8">Notable Comments</h3>
                 <div className="space-y-4">
                   {r.comments.map((c, idx) => (
                     <motion.div
@@ -368,31 +368,31 @@ export default function AnalyzePost() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.1 }}
                       className={`rounded-2xl p-6 border-l-4 transition-all hover:translate-x-1 ${
-                        c.sentiment === "positive" ? "bg-accent-teal/5 border-accent-teal" : 
-                        c.sentiment === "negative" ? "bg-accent-coral/5 border-accent-coral" : 
-                        "bg-white/5 border-white/20"
+                        c.sentiment === "positive" ? "bg-teal/5 border-teal" : 
+                        c.sentiment === "negative" ? "bg-coral/5 border-coral" : 
+                        "bg-surface-input border-line"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <span className="text-[14px] font-black text-white">@{c.ownerUsername}</span>
+                          <span className="text-[14px] font-black text-ink">@{c.ownerUsername}</span>
                           <Pill className={`border-none ${
-                            c.sentiment === "positive" ? "bg-accent-teal text-black" : 
-                            c.sentiment === "negative" ? "bg-accent-coral text-white" : 
-                            "bg-white/20 text-white"
+                            c.sentiment === "positive" ? "bg-teal text-white" : 
+                            c.sentiment === "negative" ? "bg-coral text-white" : 
+                            "bg-surface-input text-ink"
                           }`}>
                             {c.sentiment}
                           </Pill>
                           {c.toxicity_flag && (
-                            <span className="text-[10px] font-black text-accent-coral px-2 py-1 bg-accent-coral/10 rounded-lg uppercase tracking-widest">⚠ TOXIC</span>
+                            <span className="text-[10px] font-black text-coral px-2 py-1 bg-coral/10 rounded-lg uppercase tracking-widest">⚠ TOXIC</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-[12px] font-black text-text-muted">
-                           <span className="flex items-center gap-1"><Heart size={14} className="text-accent-coral" /> {c.likesCount || 0}</span>
-                           <span className="text-white">QUALITY: {c.quality_score}</span>
+                        <div className="flex items-center gap-3 text-[12px] font-black text-ink-muted">
+                           <span className="flex items-center gap-1"><Heart size={14} className="text-coral" /> {c.likesCount || 0}</span>
+                           <span className="text-ink">QUALITY: {c.quality_score}</span>
                         </div>
                       </div>
-                      <p className="text-[15px] text-text-secondary leading-relaxed font-medium" dir="auto">
+                      <p className="text-[15px] text-ink-secondary leading-relaxed font-medium" dir="auto">
                         {c.text}
                       </p>
                     </motion.div>
@@ -415,8 +415,8 @@ export default function AnalyzePost() {
           <div className="mx-auto w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-8 border border-white/10">
             <Link2 className="text-primary" size={32} />
           </div>
-          <h3 className="text-2xl font-black text-white tracking-tight mb-3">Ready for Audit</h3>
-          <p className="text-text-secondary max-w-sm mx-auto font-medium">
+          <h3 className="text-2xl font-black text-ink tracking-tight mb-3">Ready for Audit</h3>
+          <p className="text-ink-secondary max-w-sm mx-auto font-medium">
             Paste a link above to start Sarra's intelligence gathering process on any post.
           </p>
         </motion.div>

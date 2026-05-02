@@ -172,7 +172,7 @@ export default function PreAnalyzedPosts() {
                   <div className="w-[36px] h-[36px] rounded-full bg-gradient-to-tr from-amber-400 via-coral to-purple-500 p-[2px]">
                     <div className="w-full h-full rounded-full border-[2px] border-white dark:border-[#121212] overflow-hidden bg-surface">
                       <img 
-                        src={p.influencer === "oumaima.hamrouni_" ? "https://instagram.tunis/oumaima.jpg" : `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.influencer}`} 
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${p.influencer}`} 
                         alt="avatar" 
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${p.influencer}&backgroundColor=8857ff`;

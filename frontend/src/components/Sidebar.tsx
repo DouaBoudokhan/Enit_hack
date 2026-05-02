@@ -15,7 +15,10 @@ export function Sidebar() {
   const { pathname } = useLocation();
 
   return (
-    <aside className="w-[240px] shrink-0 bg-surface/40 backdrop-blur-xl border-r border-white/5 h-screen sticky top-0 flex flex-col z-40">
+    <aside
+      className="w-[240px] shrink-0 backdrop-blur-xl border-r border-line h-screen sticky top-0 flex flex-col z-40"
+      style={{ background: "var(--sidebar-bg)" }}
+    >
       {/* Brand */}
       <div className="px-6 pt-10 pb-8">
         <motion.div 
@@ -23,7 +26,7 @@ export function Sidebar() {
           className="flex items-center gap-3 cursor-pointer"
         >
           <div className="relative">
-            <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain rounded-xl logo-glow relative z-10" />
+            <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain rounded-xl logo-glow relative z-10" />
             <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full -z-10" />
           </div>
         </motion.div>
@@ -42,21 +45,21 @@ export function Sidebar() {
               end={item.end}
               className={`relative flex items-center gap-4 h-12 px-5 rounded-xl text-[16px] font-bold transition-all duration-300 z-10 ${
                 active
-                  ? "text-white"
-                  : "text-text-secondary hover:text-white hover:bg-white/5"
+                  ? "text-ink"
+                  : "text-ink-secondary hover:text-ink hover:bg-surface-input/50"
               }`}
             >
               {active && (
                 <motion.div
                   layoutId="sidebar-active-bg"
-                  className="absolute inset-0 bg-white/10 rounded-xl z-[-1] border border-white/10 shadow-lg"
+                  className="absolute inset-0 bg-surface-input rounded-xl z-[-1] border border-line shadow-sm"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
               {active && (
                 <motion.span 
                   layoutId="sidebar-active-indicator"
-                  className="absolute left-1 top-2.5 bottom-2.5 w-[3px] rounded-full bg-primary shadow-[0_0_12px_hsl(var(--primary))]" 
+                  className="absolute left-1 top-2.5 bottom-2.5 w-[3px] rounded-full bg-primary shadow-[0_0_12px_hsl(var(--accent-purple))]" 
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -69,7 +72,7 @@ export function Sidebar() {
 
       {/* Recent (pinned bottom) */}
       <div className="mt-auto px-6 pb-10">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-4 opacity-50">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted mb-4 opacity-50">
           History
         </div>
         <ul className="flex flex-col gap-3">
@@ -78,10 +81,10 @@ export function Sidebar() {
               <motion.button
                 whileHover={{ x: 4 }}
                 type="button"
-                className="w-full flex items-center gap-3 text-[12px] font-medium text-text-secondary hover:text-white transition-colors truncate text-left group"
+                className="w-full flex items-center gap-3 text-[12px] font-medium text-ink-secondary hover:text-ink transition-colors truncate text-left group"
                 title={name}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-primary transition-colors" />
+                <div className="w-1.5 h-1.5 rounded-full bg-ink-muted/30 group-hover:bg-primary transition-colors" />
                 <span className="truncate opacity-80 group-hover:opacity-100">{name}</span>
               </motion.button>
             </li>

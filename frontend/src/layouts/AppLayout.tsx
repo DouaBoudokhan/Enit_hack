@@ -11,8 +11,8 @@ export default function AppLayout() {
 
   return (
     <ExportProvider>
-      <div className="min-h-screen flex w-full bg-background text-white relative overflow-hidden font-sans">
-        {/* Animated Background Mesh - Premium Overhaul */}
+      <div className="min-h-screen flex w-full bg-background text-foreground relative overflow-hidden font-sans">
+        {/* Animated Background Mesh */}
         <div className="pointer-events-none fixed inset-0 z-0">
           <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/5 blur-[120px] animate-pulse" style={{ animationDuration: '15s' }} />
           <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-teal/5 blur-[140px] animate-pulse" style={{ animationDuration: '18s', animationDelay: '3s' }} />
