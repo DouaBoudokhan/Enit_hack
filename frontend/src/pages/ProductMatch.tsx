@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { Upload, X, ImageIcon, Instagram, CheckCircle2, TrendingUp, Users, AlertCircle } from "lucide-react";
+import { Upload, X, ImageIcon, Instagram, CheckCircle2, TrendingUp, Users, AlertCircle, Swords } from "lucide-react";
 import { Pill } from "@/components/Pill";
 import { useExport } from "@/context/ExportContext";
 import { motion, AnimatePresence } from "framer-motion";
+import VSCompare from "@/components/VSCompare";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -54,6 +55,7 @@ export default function ProductMatch() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [generatedDesc, setGeneratedDesc] = useState("");
+  const [showVS, setShowVS] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { setPayload } = useExport();
 
@@ -282,6 +284,24 @@ export default function ProductMatch() {
         ) : (
           hasResult && matches.length > 0 && (
             <>
+              {/* VS Compare Button */}
+              {matches.length >= 2 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-10 flex justify-center"
+                >
+                  <button
+                    onClick={() => setShowVS(true)}
+                    className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-primary via-coral to-teal text-white font-black text-[14px] px-8 py-4 rounded-2xl transition-all hover:shadow-[0_0_40px_hsla(263,90%,65%,0.3)] active:scale-[0.97] uppercase tracking-widest"
+                  >
+                    <Swords size={20} className="group-hover:rotate-12 transition-transform" />
+                    Compare Influencers
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-coral/20 to-teal/20 animate-pulse" style={{ animationDuration: "3s" }} />
+                  </button>
+                </motion.div>
+              )}
+
               {/* Section Dividers */}
               {matches.some(m => m.has_audit) && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6 flex items-center gap-3">
@@ -328,6 +348,15 @@ export default function ProductMatch() {
           )
         )}
       </div>
+
+      {/* VS Compare Modal */}
+      {showVS && matches.length >= 2 && (
+        <VSCompare
+          influencers={matches}
+          onClose={() => setShowVS(false)}
+          productName={generatedDesc || desc}
+        />
+      )}
     </div>
   );
 }

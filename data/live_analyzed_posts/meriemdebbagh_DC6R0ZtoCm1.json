@@ -2,10 +2,10 @@
   "post": {
     "post_id": "https://www.instagram.com/p/DC6R0ZtoCm1/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==",
     "post_url": "https://www.instagram.com/p/DC6R0ZtoCm1/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==",
-    "display_url": "https://scontent-ord5-1.cdninstagram.com/v/t51.2885-15/468586472_18469266322018523_401785030876863340_n.jpg?stp=dst-jpg_e35_s1080x1080_sh2.08_tt6&_nc_ht=scontent-ord5-1.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2gFsk0dyBzUe-yA_vJSQQ5fvwP25yVqSk7lveARHqot4EdUQjPcJ3LnuwexKv5CG7Nw&_nc_ohc=1VvPFVB2Y2oQ7kNvwEel_Us&_nc_gid=__GPECoGkOhBCzq091j9iA&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af4GWk0rLp7aWdY-YmQqqkYpZ-oDiMz5XDOXgkzHqmJGtw&oe=69FB2C1D&_nc_sid=10d13b",
+    "display_url": "https://scontent-lga3-1.cdninstagram.com/v/t51.2885-15/468586472_18469266322018523_401785030876863340_n.jpg?stp=dst-jpg_e35_s1080x1080_sh2.08_tt6&_nc_ht=scontent-lga3-1.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2gHNLVDcyKAiia-8flpcL7JERJkvbJNF8exmePiNUOyKJGHrez_SUj-4Ns0A7aeTraU&_nc_ohc=1VvPFVB2Y2oQ7kNvwFdKqHC&_nc_gid=EYBliwsKkNmdY2OQERdAjw&edm=APs17CUBAAAA&ccb=7-5&oh=00_Af50ftgrV7J7d_KF7h9ZBxQwXcsY1wliZf8JIDw-Wzvg9g&oe=69FB9C9D&_nc_sid=10d13b",
     "media_type": "image",
-    "enriched_content": "The image shows a woman sitting on the floor of a mosque reading the Quran from a wooden stand. \n\nThe content category appears to be Lifestyle or Faith.\n\nThe woman's traditional attire and setting suggest that brands focused on modest fashion, Islamic or cultural products, and spirituality may benefit from this content. Brands interested in reaching a Muslim audience or promoting cultural sensitivity could leverage this image effectively.",
-    "likes_count": 148995,
+    "enriched_content": "Here is a concise analysis of the Instagram post image:\n\n1. The image shows a woman wearing a black hijab and abaya sitting on a prayer mat in a mosque, reading from a book (likely the Quran) placed on a wooden stand.\n2. The content category of this image is Lifestyle/Spirituality, specifically showcasing a moment of prayer and contemplation.\n3. Brands that would benefit from this content include those related to modest fashion, Islamic lifestyle, prayer and spirituality, and cultural/religious tourism, such as fashion brands that cater to Muslim women.",
+    "likes_count": 148994,
     "comments_count": 677,
     "caption": "قيام الليل في المسجد النبوي الشريف 🇸🇦"
   },
@@ -15,10 +15,10 @@
   },
   "content_type": "Fashion",
   "sentiment": {
-    "positive": 33.33,
-    "neutral": 16.67,
+    "positive": 16.67,
+    "neutral": 33.33,
     "negative": 50,
-    "avg_quality": 3.67,
+    "avg_quality": 4.0,
     "toxicity_rate": 50,
     "total_comments": 13
   },
@@ -39,7 +39,7 @@
       "percentage": 23
     }
   ],
-  "context_insight": "The image shows a woman sitting on the floor of a mosque reading the Quran from a wooden stand. \n\nThe content category appears to be Lifestyle or Faith.\n\nThe woman's traditional attire and setting suggest that brands focused on modest fashion, Islamic or cultural products, and spirituality may benefit from this content. Brands interested in reaching a Muslim audience or promoting cultural sensitivity could leverage this image effectively.",
+  "context_insight": "Here is a concise analysis of the Instagram post image:\n\n1. The image shows a woman wearing a black hijab and abaya sitting on a prayer mat in a mosque, reading from a book (likely the Quran) placed on a wooden stand.\n2. The content category of this image is Lifestyle/Spirituality, specifically showcasing a moment of prayer and contemplation.\n3. Brands that would benefit from this content include those related to modest fashion, Islamic lifestyle, prayer and spirituality, and cultural/religious tourism, such as fashion brands that cater to Muslim women.",
   "comments": [
     {
       "id": "18180152833346772",
@@ -187,8 +187,8 @@
       "repliesCount": 1,
       "timestamp": "2026-01-04T17:42:14.000Z",
       "sentiment": "negative",
-      "quality_score": 2,
-      "toxicity_flag": true,
+      "quality_score": 1,
+      "toxicity_flag": false,
       "language": "Arabic/Darija"
     },
     {
@@ -202,7 +202,7 @@
       "repliesCount": 0,
       "timestamp": "2026-01-03T20:54:42.000Z",
       "sentiment": "positive",
-      "quality_score": 8,
+      "quality_score": 9,
       "toxicity_flag": false,
       "language": "Arabic/Darija"
     },

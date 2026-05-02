@@ -458,6 +458,7 @@ class ProductMatchRequest(BaseModel):
 _PRODUCT_KEYWORDS = {
     "skincare": ["skincare", "skin", "cream", "serum", "moisturizer", "beauty", "cosmetic", "organic", "natural", "glow", "anti-aging", "sunscreen", "cleanser", "face", "routine"],
     "fashion": ["fashion", "clothing", "wear", "dress", "outfit", "style", "apparel", "collection", "designer", "shoes", "accessory", "jewelry", "luxury", "brand", "couture", "vêtement", "mode", "robe", "tenue"],
+    "men_fashion": ["men", "man", "homme", "menswear", "grooming", "beard", "masculine", "exist", "celio", "pull & bear"],
     "food": ["food", "restaurant", "cuisine", "recipe", "cooking", "chef", "organic", "healthy", "diet", "nutrition", "meal", "snack", "drink", "beverage", "café", "alimentation", "nourriture"],
     "tech": ["tech", "technology", "app", "software", "gadget", "phone", "computer", "digital", "ai", "innovation", "smart", "device", "electronic"],
     "fitness": ["fitness", "gym", "workout", "exercise", "sport", "health", "wellness", "yoga", "training", "supplement", "protein", "muscle"],
@@ -474,6 +475,7 @@ _PRODUCT_KEYWORDS = {
 _CATEGORY_NICHE_AFFINITY = {
     "skincare": {"Beauty": 1.0, "Lifestyle": 0.7, "Fashion": 0.5, "Spirituality": 0.2},
     "fashion": {"Fashion": 1.0, "Beauty": 0.6, "Lifestyle": 0.7, "Culture": 0.3, "Entertainment": 0.3},
+    "men_fashion": {"Fashion": 1.0, "Lifestyle": 0.7, "Culture": 0.3},
     "food": {"Lifestyle": 0.8, "Culture": 0.5, "Travel": 0.4, "Comedy": 0.2},
     "tech": {"Entertainment": 0.5, "Lifestyle": 0.3, "Comedy": 0.2},
     "fitness": {"Lifestyle": 0.8, "Beauty": 0.4, "Fashion": 0.3},
@@ -488,30 +490,60 @@ _CATEGORY_NICHE_AFFINITY = {
 
 
 def _detect_product_categories(description: str) -> dict[str, float]:
-    """Detect product categories from description text. Returns {category: confidence}."""
+    """Detect product categories and gender from description text."""
     desc_lower = description.lower()
     scores = {}
+    
+    # Check for men's specific keywords first to boost men_fashion
+    is_men = any(w in desc_lower for w in ["men", "man", "homme", "menswear", "exist", "garçon", "boy"])
+    is_women = any(w in desc_lower for w in ["women", "woman", "femme", "makeup", "maquillage", "skincare", "girl", "fille"])
+    
     for category, keywords in _PRODUCT_KEYWORDS.items():
         hits = sum(1 for kw in keywords if kw in desc_lower)
         if hits > 0:
-            scores[category] = min(hits / 3, 1.0)  # normalize
+            confidence = min(hits / 3, 1.0)
+            if category == "men_fashion" and is_men:
+                confidence = 1.0
+            scores[category] = confidence
+    
+    # Add gender as a meta category
+    if is_men: scores["_gender"] = 1.0 # 1.0 for Male
+    elif is_women: scores["_gender"] = 2.0 # 2.0 for Female
+    else: scores["_gender"] = 0.0 # 0.0 for Neutral
     
     # If no category matched, default to lifestyle
-    if not scores:
+    if not any(k for k in scores if not k.startswith("_")):
         scores["lifestyle"] = 0.5
     
     return scores
 
 
 def _score_influencer_match(parsed: dict, product_categories: dict[str, float], description: str) -> dict:
-    """Score how well an influencer matches a product based on their report data."""
+    """Score how well an influencer matches a product, including gender relevance."""
     primary_niche = parsed.get("primary_niche", "")
     secondary_niches = parsed.get("secondary_niches", [])
     all_niches = [primary_niche] + secondary_niches
     
+    # 0. Gender Penalty Check
+    product_gender = product_categories.get("_gender", 0.0)
+    influencer_gender = 0.0 # Unknown
+    
+    # Simple heuristic for audited influencers
+    name_lower = (parsed.get("full_name") or "").lower()
+    if any(n in name_lower for n in ["oumaima", "samira", "sarra", "ons"]):
+        influencer_gender = 2.0 # Female
+    elif any(n in name_lower for n in ["hamma", "mehdi", "mourad", "ahmed"]):
+        influencer_gender = 1.0 # Male
+        
+    gender_penalty = 1.0
+    if product_gender != 0.0 and influencer_gender != 0.0:
+        if product_gender != influencer_gender:
+            gender_penalty = 0.2 # 80% penalty for gender mismatch
+    
     # 1. Niche affinity score (0-100)
     niche_score = 0
     for cat, cat_conf in product_categories.items():
+        if cat.startswith("_"): continue
         affinity_map = _CATEGORY_NICHE_AFFINITY.get(cat, {})
         for niche in all_niches:
             aff = affinity_map.get(niche, 0)
@@ -529,21 +561,18 @@ def _score_influencer_match(parsed: dict, product_categories: dict[str, float], 
     sentiment = parsed.get("sentiment", {})
     sent_bonus = min(sentiment.get("positive", 0) / 10, 10)
     
-    # 5. Content keyword overlap (0-10) — check if product keywords appear in the .md content
+    # 5. Content keyword overlap (0-10)
     content = parsed.get("_content", "").lower()
     desc_words = set(description.lower().split())
     content_words = set(content.split())
     overlap = len(desc_words & content_words)
     content_bonus = min(overlap * 2, 10)
     
-    # If the niche match is very low, do not grant massive bonuses
-    bonus_multiplier = max(niche_score / 100, 0.15)  # Max 15% of bonus applies if niche is 0
-    
     # Base niche is weighted heavily
-    total = round(niche_score * 0.7 + (health_bonus + engagement_bonus + sent_bonus + content_bonus) * bonus_multiplier, 1)
+    bonus_multiplier = max(niche_score / 100, 0.15)
+    total = round((niche_score * 0.7 + (health_bonus + engagement_bonus + sent_bonus + content_bonus) * bonus_multiplier) * gender_penalty, 1)
     
-    # Hard cap for terrible fits to prevent inflated scores
-    if niche_score < 20:
+    if niche_score < 20 and gender_penalty > 0.5:
         total = min(total, 25)
         
     total = min(total, 100)
@@ -595,10 +624,17 @@ async def _discover_influencers_via_ai(description: str, product_categories: dic
     """Use Azure OpenAI GPT to discover top Tunisian influencers for a product."""
     from openai import AsyncAzureOpenAI
     
-    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
-    api_key = os.environ.get("AZURE_OPENAI_API_KEY", "")
-    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5.2-chat")
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
+    # Use AZURE_API_BASE (roua10) with gpt-5.4-nano
+    raw_endpoint = os.environ.get("AZURE_API_BASE", "").rstrip("/")
+    api_key = os.environ.get("AZURE_API_KEY", "")
+    api_version = os.environ.get("AZURE_API_VERSION", "2025-04-01-preview")
+    
+    # Extract deployment from model=azure/gpt-5.4-nano
+    model_env = os.environ.get("model", "azure/gpt-5.4-nano")
+    deployment = model_env.split("/")[1] if "/" in model_env else model_env
+    
+    # Normalize: cognitiveservices.azure.com → openai.azure.com
+    endpoint = normalize_azure_endpoint(raw_endpoint)
     
     if not endpoint or not api_key:
         logger.warning("Azure OpenAI not configured, skipping AI discovery")
@@ -622,11 +658,10 @@ Find 4-5 real, well-known Tunisian influencers on Instagram and/or TikTok who wo
 
 CRITICAL RULES:
 1. Do NOT mention "oumaima.hamrouni_" or "samiramagroun" — they are already in our database.
-2. GENDER RELEVANCE: If the product is clearly for MEN (men's clothing, men's grooming, etc.), suggest MALE influencers only. If the product is for WOMEN (makeup, women's fashion, etc.), suggest FEMALE influencers. If the product is gender-neutral, mix both.
-3. PRIORITIZE these known Tunisian influencers when they match the category:
-   - Makeup / Beauty: Sarra Cherif (does makeup tutorials), Ons Hm
-   - Men's clothing / Men's fashion: Hamma Stories, Mehdi Mzeh, Mourad Rouge
-   Only include them if they are relevant to the product. You may add other real Tunisian influencers too.
+2. GENDER RELEVANCE: If the product is for MEN (men's clothing like 'Exist', men's grooming, etc.), suggest MALE influencers ONLY. Choose real Tunisian men like: Hamma Stories (@hamma_stories, ~1.6M followers), Mehdi Mzeh (@mehdidzeh, ~420K followers), Mourad Rouge (@mourad_rouge, ~510K followers).
+3. If the product is for WOMEN (makeup, skincare, etc.), suggest FEMALE influencers ONLY. Choose real Tunisian women like: Sarra Cherif (@sarra__cherif, ~950K followers), Ons Hm (@ons_hm, ~1.1M followers), Rym Saidi (~1.8M followers).
+4. If the product is gender-neutral, mix both.
+5. Choose REAL, popular Tunisian influencers. Respond ONLY with valid JSON.
 
 Respond ONLY with a valid JSON array, no markdown, no ```json, just raw JSON:
 [
@@ -769,10 +804,9 @@ async def product_match(request: ProductMatchRequest):
             except Exception as e:
                 logger.error(f"Failed to process {file_path} for matching: {e}")
     
-    # Sort audited by score
+    # Sort audited by score and filter out low matches (e.g. gender mismatch)
+    audited_matches = [m for m in audited_matches if m["match"] >= 30]
     audited_matches.sort(key=lambda x: x["match"], reverse=True)
-    if audited_matches and audited_matches[0]["match"] >= 50:
-        audited_matches[0]["best"] = True
     
     # ══════════════════════════════════════════════════════════
     # 2. AI-DISCOVERED influencers (via Azure GPT)
@@ -780,9 +814,22 @@ async def product_match(request: ProductMatchRequest):
     discovered = await _discover_influencers_via_ai(description, product_categories)
     
     # ══════════════════════════════════════════════════════════
-    # 3. Merge: audited first, then discovered
+    # 3. Merge and determine best
     # ══════════════════════════════════════════════════════════
     all_matches = audited_matches + discovered
+    
+    # Mark the absolute best match across both audited and discovered
+    if all_matches:
+        # Reset all 'best' flags first
+        for m in all_matches: m["best"] = False
+        
+        # Sort by match score (if available) or just pick first
+        # For discovered, we don't have a score, so we assume they are ranked by relevance by AI
+        # Audited has a numerical score. Let's assume best is the top audited if it exists and is high.
+        if audited_matches and audited_matches[0]["match"] >= 75:
+            audited_matches[0]["best"] = True
+        elif discovered:
+            discovered[0]["best"] = True
     
     return {
         "description": description,
