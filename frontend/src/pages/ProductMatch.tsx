@@ -1,37 +1,126 @@
-import { useEffect, useState } from "react";
-import { Upload } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Upload, X, ImageIcon } from "lucide-react";
 import { Card } from "@/components/Card";
 import { Pill } from "@/components/Pill";
 import { AnimatedBar } from "@/components/Bars";
 import { useExport } from "@/context/ExportContext";
-import { productMatches } from "@/data/demo";
 
 type Mode = "describe" | "upload";
 
+interface MatchResult {
+  name: string;
+  handle: string;
+  initials: string;
+  category: string;
+  match: number;
+  cqs: number;
+  domain: string[];
+  followers: number;
+  engagement_rate: number;
+  sentiment_positive: number;
+  reason: string;
+  best: boolean;
+}
+
 export default function ProductMatch() {
   const [mode, setMode] = useState<Mode>("describe");
-  const [desc, setDesc] = useState(
-    "A premium organic skincare line targeting women 25–40."
-  );
+  const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(false);
-  const [hasResult, setHasResult] = useState(true);
+  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [hasResult, setHasResult] = useState(false);
+  const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [generatedDesc, setGeneratedDesc] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { setPayload } = useExport();
 
   useEffect(() => {
-    setPayload({
-      page: "product_match",
-      productDescription: desc,
-      matches: productMatches,
-    });
-  }, [setPayload, desc]);
+    if (hasResult) {
+      setPayload({
+        page: "product_match",
+        productDescription: generatedDesc || desc,
+        matches,
+      });
+    }
+  }, [setPayload, desc, matches, hasResult, generatedDesc]);
 
-  const onFind = () => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const onFind = async () => {
     setLoading(true);
     setHasResult(false);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    setGeneratedDesc("");
+
+    try {
+      let body: { description?: string; image_base64?: string } = {};
+
+      if (mode === "describe") {
+        if (!desc.trim()) {
+          setError("Please enter a product description.");
+          setLoading(false);
+          return;
+        }
+        body.description = desc;
+      } else {
+        // Upload mode
+        if (imageFile) {
+          // Convert image to base64
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const result = reader.result as string;
+              // Remove data:image/xxx;base64, prefix
+              resolve(result.split(",")[1]);
+            };
+            reader.readAsDataURL(imageFile);
+          });
+          body.image_base64 = base64;
+        } else {
+          setError("Please upload a product image.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      const response = await fetch("http://localhost:8000/api/product-match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || "Failed to find matches");
+      }
+
+      const data = await response.json();
+      setMatches(data.matches || []);
+      if (data.description && mode === "upload") {
+        setGeneratedDesc(data.description);
+      }
       setHasResult(true);
-    }, 1100);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,26 +161,75 @@ export default function ProductMatch() {
           className="w-full h-[80px] bg-surface border border-line-strong/80 rounded-[10px] p-4 text-[14px] text-ink placeholder:text-ink-muted outline-none transition-shadow focus:border-primary focus:shadow-[0_0_0_3px_hsl(var(--accent-purple)/0.1)] resize-none"
         />
       ) : (
-        <label className="block cursor-pointer">
-          <input type="file" accept="image/png,image/jpeg" className="hidden" />
-          <div className="border-2 border-dashed border-line-strong rounded-[10px] bg-surface-raised py-10 flex flex-col items-center gap-2 hover:bg-surface transition-colors">
-            <Upload size={24} className="text-ink-muted" strokeWidth={1.75} />
-            <div className="text-[13px] text-ink-secondary">
-              Drop an image or click to browse
+        <div>
+          {imagePreview ? (
+            <div className="relative border border-line-strong rounded-[10px] bg-surface p-4">
+              <button
+                onClick={clearImage}
+                className="absolute top-2 right-2 bg-surface border border-line rounded-full p-1 hover:bg-surface-input transition-colors"
+              >
+                <X size={14} className="text-ink-muted" />
+              </button>
+              <div className="flex items-center gap-4">
+                <img
+                  src={imagePreview}
+                  alt="Product preview"
+                  className="w-20 h-20 object-cover rounded-lg border border-line"
+                />
+                <div>
+                  <div className="text-[14px] font-medium text-ink flex items-center gap-2">
+                    <ImageIcon size={14} className="text-primary" />
+                    {imageFile?.name}
+                  </div>
+                  <div className="text-[12px] text-ink-muted mt-1">
+                    {imageFile ? `${(imageFile.size / 1024).toFixed(0)} KB` : ""}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-[11px] text-ink-muted">
-              JPG, PNG up to 5MB
-            </div>
-          </div>
-        </label>
+          ) : (
+            <label className="block cursor-pointer">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handleImageChange}
+              />
+              <div className="border-2 border-dashed border-line-strong rounded-[10px] bg-surface-raised py-10 flex flex-col items-center gap-2 hover:bg-surface transition-colors">
+                <Upload size={24} className="text-ink-muted" strokeWidth={1.75} />
+                <div className="text-[13px] text-ink-secondary">
+                  Drop an image or click to browse
+                </div>
+                <div className="text-[11px] text-ink-muted">
+                  JPG, PNG, WebP up to 5MB
+                </div>
+              </div>
+            </label>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-3 text-[13px] text-coral bg-coral/10 border border-coral/20 rounded-lg px-4 py-2.5">
+          {error}
+        </div>
+      )}
+
+      {generatedDesc && (
+        <div className="mt-3 bg-primary-soft/30 border border-primary/20 rounded-lg px-4 py-3">
+          <div className="text-[11px] text-primary font-medium uppercase tracking-wider mb-1">AI-generated description</div>
+          <div className="text-[13px] text-ink-secondary">{generatedDesc}</div>
+        </div>
       )}
 
       <button
         type="button"
         onClick={onFind}
-        className="mt-4 w-full bg-primary hover:bg-primary-strong text-primary-foreground text-[14px] font-medium h-11 rounded-[10px] transition-colors duration-150 active:scale-[0.98]"
+        disabled={loading}
+        className="mt-4 w-full bg-primary hover:bg-primary-strong disabled:opacity-60 text-primary-foreground text-[14px] font-medium h-11 rounded-[10px] transition-colors duration-150 active:scale-[0.98]"
       >
-        Find matches →
+        {loading ? "Analyzing…" : "Find matches →"}
       </button>
 
       <div className="mt-8">
@@ -120,9 +258,9 @@ export default function ProductMatch() {
             </div>
           </>
         ) : (
-          hasResult && (
+          hasResult && matches.length > 0 && (
             <div className="grid grid-cols-3 gap-4 animate-fade-in">
-              {productMatches.map((m, i) => (
+              {matches.map((m, i) => (
                 <MatchCard key={m.name} match={m} delay={i * 80} />
               ))}
             </div>
@@ -137,14 +275,15 @@ function MatchCard({
   match,
   delay,
 }: {
-  match: (typeof productMatches)[number];
+  match: MatchResult;
   delay: number;
 }) {
   const cqsColor =
-    match.cqsB >= 70 ? "text-teal" : match.cqsB >= 60 ? "text-amber" : "text-coral";
+    match.cqs >= 70 ? "text-teal" : match.cqs >= 60 ? "text-amber" : "text-coral";
 
-  const avatarBg =
-    match.avatarBg === "primary-soft" ? "hsl(var(--accent-purple-soft))" : "hsl(var(--surface-input))";
+  const avatarBg = match.best
+    ? "hsl(var(--accent-purple-soft))"
+    : "hsl(var(--surface-input))";
 
   return (
     <Card
@@ -191,13 +330,13 @@ function MatchCard({
       </div>
 
       <div className="mt-4">
-        <div className="text-[11px] text-ink-muted">CQS_B</div>
+        <div className="text-[11px] text-ink-muted">CQS</div>
         <div className={`text-[18px] font-semibold mt-0.5 tracking-tight-2 ${cqsColor}`}>
-          {match.cqsB.toFixed(1)}
+          {match.cqs.toFixed(1)}
         </div>
       </div>
 
-      <p className="mt-3 italic text-[13px] text-ink-secondary line-clamp-2">
+      <p className="mt-3 italic text-[13px] text-ink-secondary">
         {match.reason}
       </p>
 
