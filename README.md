@@ -1,6 +1,8 @@
-# 🚀 Influencer Intelligence OSINT | ENIT HACK 2026
+# 🚀 VibeCheck | ENIT HACK 2026
 
-![Project Banner](https://placehold.co/1200x400/1E1E2E/A6ADC8?text=Influencer+Intelligence+OSINT)
+<p align="center">
+  <img src="frontend/public/logo.png" alt="VibeCheck Logo" width="200" />
+</p>
 
 > **The next-generation Tunisian Influencer Analysis & Matching Platform.** Powered by Multi-Agent AI (CrewAI) and Real-time Voice Interaction.
 
