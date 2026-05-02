@@ -13,6 +13,18 @@ const WS_URL = ENDPOINT && API_KEY
   ? `${ENDPOINT}?api-version=${encodeURIComponent(API_VERSION)}&deployment=${encodeURIComponent(DEPLOYMENT)}&api-key=${encodeURIComponent(API_KEY)}`
   : "";
 
+type VoiceLogLevel = "info" | "warn" | "error";
+
+function logToServer(level: VoiceLogLevel, message: string, details?: Record<string, unknown>) {
+  fetch("/api/voice-client-log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ level, message, details }),
+  }).catch((error) => {
+    console.warn("[Voice] Could not send log to backend:", error);
+  });
+}
+
 export function useRealtimeAudio() {
   const [state, setState] = useState<VoiceState>("idle");
   const stateRef = useRef<VoiceState>("idle");
@@ -57,14 +69,14 @@ export function useRealtimeAudio() {
     nextPlayTimeRef.current = 0;
   }, []);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback((nextState: VoiceState = "idle") => {
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
     stopAudio();
-    setState("idle");
-    stateRef.current = "idle";
+    setState(nextState);
+    stateRef.current = nextState;
   }, [stopAudio]);
 
   const initSession = useCallback(() => {
@@ -203,14 +215,21 @@ export function useRealtimeAudio() {
       processor.connect(ctx.destination);
     } catch (e) {
       console.error("Microphone access denied:", e);
+      logToServer("error", "Microphone access denied", { error: String(e) });
       setState("error");
-      disconnect();
+      disconnect("error");
     }
   }, [disconnect]);
 
   const connect = useCallback(() => {
     if (!WS_URL) {
       console.error("Missing realtime configuration. Set VITE_AZURE_REALTIME_ENDPOINT and VITE_AZURE_REALTIME_API_KEY.");
+      logToServer("error", "Missing realtime configuration", {
+        has_endpoint: Boolean(ENDPOINT),
+        has_api_key: Boolean(API_KEY),
+        deployment: DEPLOYMENT,
+        api_version: API_VERSION,
+      });
       setState("error");
       stateRef.current = "error";
       return;
@@ -219,6 +238,11 @@ export function useRealtimeAudio() {
     console.log("[Voice] Connecting to Azure Realtime...");
     console.log("[Voice] Endpoint:", ENDPOINT);
     console.log("[Voice] Deployment:", DEPLOYMENT);
+    logToServer("info", "Connecting to Azure Realtime", {
+      endpoint: ENDPOINT,
+      deployment: DEPLOYMENT,
+      api_version: API_VERSION,
+    });
     setState("connecting");
     stateRef.current = "connecting";
     const ws = new WebSocket(WS_URL);
@@ -226,6 +250,7 @@ export function useRealtimeAudio() {
 
     ws.onopen = () => {
       console.log("[Voice] ✅ WebSocket connected!");
+      logToServer("info", "WebSocket connected");
       setState("listening");
       stateRef.current = "listening";
       initSession();
@@ -233,20 +258,33 @@ export function useRealtimeAudio() {
     };
 
     ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
+      let msg: { type?: string; [key: string]: unknown };
+      try {
+        const parsed = JSON.parse(e.data);
+        if (!parsed || typeof parsed !== "object") {
+          throw new Error("Message is not an object");
+        }
+        msg = parsed as { type?: string; [key: string]: unknown };
+      } catch (error) {
+        console.error("[Voice] Invalid WS message payload:", e.data);
+        logToServer("error", "Invalid WS message payload", { error: String(error) });
+        return;
+      }
       // Log all message types for debugging
       if (msg.type !== "response.audio.delta" && msg.type !== "input_audio_buffer.append") {
-        console.log("[Voice] 📩 Received:", msg.type, msg.type === "error" ? msg.error : "");
+        console.log("[Voice] 📩 Received:", msg.type, msg.type === "error" ? String(msg.error ?? "") : "");
       }
       switch(msg.type) {
         case "session.created":
           console.log("[Voice] ✅ Session created successfully");
+          logToServer("info", "Realtime session created");
           break;
         case "session.updated":
           console.log("[Voice] ✅ Session configured");
+          logToServer("info", "Realtime session updated");
           break;
         case "response.audio.delta":
-          if (msg.delta) {
+          if (typeof msg.delta === "string" && msg.delta) {
             setState("speaking");
             stateRef.current = "speaking";
             startPlayback(msg.delta);
@@ -259,17 +297,37 @@ export function useRealtimeAudio() {
           stateRef.current = "listening";
           break;
         case "response.function_call_arguments.done":
-          if (msg.name === "investigate_influencer") {
-            const args = JSON.parse(msg.arguments);
+          if (msg.name === "investigate_influencer" && typeof msg.arguments === "string") {
+            let args: { influencer_name?: string; specific_query?: string };
+            try {
+              args = JSON.parse(msg.arguments) as { influencer_name?: string; specific_query?: string };
+            } catch (error) {
+              logToServer("error", "Failed to parse function call arguments", { error: String(error) });
+              break;
+            }
+            const influencerName = args.influencer_name?.trim();
+            const specificQuery = args.specific_query?.trim();
+            const callId = typeof msg.call_id === "string" ? msg.call_id : "";
+            if (!influencerName || !callId) {
+              logToServer("error", "Invalid function call arguments", {
+                influencer_name: influencerName ?? "",
+                has_call_id: Boolean(callId),
+              });
+              break;
+            }
             setState("investigating");
             stateRef.current = "investigating";
+            logToServer("info", "Tool call triggered", {
+              tool: "investigate_influencer",
+              influencer_name: influencerName,
+            });
             
-            fetch("http://localhost:8000/api/investigate-influencer", {
+            fetch("/api/investigate-influencer", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ 
-                influencer_name: args.influencer_name,
-                specific_query: args.specific_query || "Analyse complète et générale"
+                influencer_name: influencerName,
+                specific_query: specificQuery || "Analyse complète et générale"
               })
             })
             .then(res => res.json())
@@ -279,20 +337,24 @@ export function useRealtimeAudio() {
                   type: "conversation.item.create",
                   item: {
                     type: "function_call_output",
-                    call_id: msg.call_id,
+                    call_id: callId,
                     output: data.report
                   }
                 }));
                 wsRef.current.send(JSON.stringify({ type: "response.create" }));
               }
+              logToServer("info", "Investigation completed", {
+                influencer_name: influencerName,
+              });
             })
             .catch(err => {
+              logToServer("error", "Investigation failed", { error: String(err) });
               if (wsRef.current?.readyState === WebSocket.OPEN) {
                 wsRef.current.send(JSON.stringify({
                   type: "conversation.item.create",
                   item: {
                     type: "function_call_output",
-                    call_id: msg.call_id,
+                    call_id: callId,
                     output: "Désolé, la recherche a échoué à cause d'une erreur réseau."
                   }
                 }));
@@ -303,19 +365,22 @@ export function useRealtimeAudio() {
           break;
         case "error":
           console.error("[Voice] ❌ Azure OpenAI Error:", msg.error);
+          logToServer("error", "Azure Realtime error", { error: String(msg.error ?? "unknown") });
           break;
       }
     };
 
     ws.onerror = (e) => {
       console.error("[Voice] ❌ WebSocket Error:", e);
+      logToServer("error", "WebSocket error");
       setState("error");
-      disconnect();
+      disconnect("error");
     };
 
     ws.onclose = (e) => {
       console.log("[Voice] WebSocket closed. Code:", e.code, "Reason:", e.reason);
-      disconnect();
+      logToServer("warn", "WebSocket closed", { code: e.code, reason: e.reason });
+      disconnect(stateRef.current === "error" ? "error" : "idle");
     };
   }, [initSession, startMic, startPlayback, interruptPlayback, disconnect]);
 

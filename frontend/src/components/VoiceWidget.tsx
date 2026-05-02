@@ -12,7 +12,7 @@ export function VoiceWidget() {
   useEffect(() => {
     if (state === "investigating") {
       setLogs([]);
-      const eventSource = new EventSource("http://localhost:8000/api/investigate-logs");
+      const eventSource = new EventSource("/api/investigate-logs");
       
       eventSource.onmessage = (event) => {
         setLogs((prev) => [...prev, event.data].slice(-100));

@@ -1312,6 +1312,25 @@ class InvestigateRequest(BaseModel):
     specific_query: str
 
 
+class VoiceClientLog(BaseModel):
+    level: str = "info"
+    message: str
+    details: dict | None = None
+
+
+@app.post("/api/voice-client-log")
+async def voice_client_log(payload: VoiceClientLog):
+    """Receive frontend voice diagnostics and print them in backend CMD logs."""
+    level = payload.level.lower()
+    if level == "error":
+        logger.error(f"[VOICE-UI] {payload.message} | details={payload.details}")
+    elif level in {"warn", "warning"}:
+        logger.warning(f"[VOICE-UI] {payload.message} | details={payload.details}")
+    else:
+        logger.info(f"[VOICE-UI] {payload.message} | details={payload.details}")
+    return {"ok": True}
+
+
 @app.post("/api/investigate-influencer")
 async def investigate_influencer(req: InvestigateRequest):
     """Run the VoiceInvestigationCrew to research an influencer via web search & scraping."""
