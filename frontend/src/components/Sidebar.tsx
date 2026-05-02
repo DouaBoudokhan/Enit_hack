@@ -23,10 +23,10 @@ export function Sidebar() {
       <div className="px-6 pt-10 pb-8">
         <motion.div 
           whileHover={{ scale: 1.02 }}
-          className="flex items-center gap-3 cursor-pointer"
+          className="flex items-center justify-center cursor-pointer"
         >
           <div className="relative">
-            <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain rounded-xl logo-glow relative z-10" />
+            <img src="/logo.png" alt="Logo" className="w-32 h-32 object-contain rounded-xl logo-glow relative z-10" />
             <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full -z-10" />
           </div>
         </motion.div>

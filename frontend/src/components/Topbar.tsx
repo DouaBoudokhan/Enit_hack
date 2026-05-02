@@ -12,12 +12,10 @@ export function Topbar() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="h-16 flex items-center justify-between gap-4 sticky top-0 z-50 mb-8 px-8 border-b border-line"
+      className="h-16 flex items-center justify-end gap-4 sticky top-0 z-50 mb-8 px-8 border-b border-line"
       style={{ background: "var(--topbar-bg)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
     >
-      <div className="flex items-center gap-3">
-        <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain logo-glow" />
-      </div>
+
       <div className="flex items-center gap-4">
         {/* Theme Toggle */}
         <motion.button
