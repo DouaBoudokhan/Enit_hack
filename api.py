@@ -14,6 +14,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, RedirectResponse
+import httpx
 from pydantic import BaseModel
 from openai import AsyncAzureOpenAI
 
@@ -773,163 +775,313 @@ async def analyze_post(req: PostAnalysisRequest):
 
 
 async def _analyze_live_post_async(post_url: str) -> dict:
-    """Analyze a post live using Vision AI. Fully async."""
-    from scraper import _capture_async
+    """Analyze a post live using Apify (comments) + Groq Llama Scout (visual analysis)."""
+    import asyncio
+    from apify_client import ApifyClient as ApifyClientSync
 
     logger = logging.getLogger(__name__)
 
-    endpoint = normalize_azure_endpoint(os.environ.get("AZURE_OPENAI_ENDPOINT", ""))
-    api_key = os.environ.get("AZURE_OPENAI_API_KEY", "")
-    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5.2-chat")
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
-
-    client = AsyncAzureOpenAI(
-        azure_endpoint=endpoint,
-        api_key=api_key,
-        api_version=api_version,
-    )
-
+    # ── Extract handle from URL ──
     handle_match = re.search(r"(?:instagram\.com|tiktok\.com)/@?([A-Za-z0-9_.]+)", post_url)
     handle = handle_match.group(1) if handle_match else "unknown"
     if handle in ("p", "reel", "tv", "stories", "reels", "video"):
         handle = "unknown"
 
-    # ── Step 1: Async Screenshot ──
-    screenshot_b64 = None
-    try:
-        session_id = os.environ.get("INSTAGRAM_SESSION_ID")
-        logger.info(f"📸 Capturing screenshot of {post_url}")
-        png_bytes = await _capture_async(post_url, session_id)
-        screenshot_b64 = base64.b64encode(png_bytes).decode("utf-8")
-        logger.info("✅ Screenshot captured successfully")
-    except Exception as e:
-        logger.error(f"❌ Screenshot failed: {e}")
+    # Clean URL — strip query params for Apify
+    clean_url = post_url.split("?")[0]
 
-    # ── Step 2: Vision Prompt ──
-    vision_prompt = """Analyze this social media post for a Brand Manager. 
-Identify the 'ROI Sentiment' based on the content type:
+    # ══════════════════════════════════════════════════════
+    # Step 1: Scrape comments from Instagram via Apify
+    # ══════════════════════════════════════════════════════
+    apify_token = os.environ.get("APIFY_API_KEY", "") or os.environ.get("APIFY_API_TOKEN", "")
+    
+    scraped_comments = []
+    post_metadata = {}
+    display_url = ""
+    apify_client = None
+    
+    if apify_token:
+        apify_client = ApifyClientSync(apify_token)
+        try:
+            logger.info(f"[APIFY] Scraping comments for {clean_url}")
+            
+            run_input = {
+                "directUrls": [clean_url],
+                "resultsLimit": 50,
+            }
+            
+            # Run synchronously in a thread to avoid blocking the event loop
+            run = await asyncio.to_thread(
+                apify_client.actor("SbK00X0JYCPblD2wp").call,
+                run_input=run_input,
+            )
+            
+            items = list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+            logger.info(f"[APIFY] Scraped {len(items)} comments")
+            
+            for i, item in enumerate(items):
+                scraped_comments.append({
+                    "id": item.get("id", f"apify_{i}"),
+                    "text": item.get("text", ""),
+                    "ownerUsername": item.get("ownerUsername", "user"),
+                    "owner": {"username": item.get("ownerUsername", "user")},
+                    "likesCount": item.get("likesCount", 0),
+                    "repliesCount": item.get("repliesCount", 0),
+                    "timestamp": item.get("timestamp", ""),
+                })
+                
+        except Exception as e:
+            logger.error(f"[APIFY] Comment scraping failed: {e}")
+    else:
+        logger.warning("[APIFY] No APIFY_API_KEY found in environment")
 
-1. **Content Intent**: Is this Humor/Comedy, Fashion, or Lifestyle? 
-2. **Contextual Sentiment**: 
-   - If COMEDY: Treat laughter (HAHAHA, Hhhh, 😂, hhh) as HIGHLY POSITIVE.
-   - If FASHION: Treat product questions (where from? price?) as HIGHLY POSITIVE.
-3. **Identity**: Extract the creator username.
-4. **Metrics**: Extract Likes and Comments.
-
-Return ONLY valid JSON:
-{
-  "media_type": "video" or "image",
-  "enriched_content": "detailed visual description and brand fit",
-  "content_type": "Comedy/Fashion/Beauty/Lifestyle",
-  "likes_count": number,
-  "comments_count": number,
-  "creator_handle": "username",
-  "context_insight": "Cultural ROI analysis: Why this worked (or didn't) for a brand",
-  "comments": [
-    {
-      "text": "comment text",
-      "ownerUsername": "username",
-      "sentiment": "positive/negative/neutral",
-      "language": "Darija/French/etc",
-      "quality_score": 1-10
-    }
-  ]
-}"""
-
-    fallback_prompt = f"The live screenshot failed for {post_url} (@{handle}). Simulate a realistic analysis for a Brand. Return ONLY valid JSON."
-
-    try:
-        if screenshot_b64:
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": vision_prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{screenshot_b64}", "detail": "high"}},
-                    ],
+    # ══════════════════════════════════════════════════════
+    # Step 2: Try to get post details via Apify Instagram Post Scraper
+    # ══════════════════════════════════════════════════════
+    media_type = "image"
+    
+    if apify_client:
+        try:
+            logger.info(f"[APIFY] Fetching post details for {clean_url}")
+            run_input_post = {
+                "directUrls": [clean_url],
+                "resultsLimit": 1,
+            }
+            run_post = await asyncio.to_thread(
+                apify_client.actor("shu8hvrXbJbY3Eb9W").call,
+                run_input=run_input_post,
+            )
+            post_items = list(apify_client.dataset(run_post["defaultDatasetId"]).iterate_items())
+            
+            if post_items:
+                post_data = post_items[0]
+                post_metadata = {
+                    "likes_count": post_data.get("likesCount", 0),
+                    "comments_count": post_data.get("commentsCount", 0),
+                    "caption": post_data.get("caption", ""),
+                    "timestamp": post_data.get("timestamp", ""),
                 }
-            ]
+                display_url = post_data.get("displayUrl", "") or post_data.get("imageUrl", "")
+                
+                owner = post_data.get("ownerUsername", "") or post_data.get("ownerFullName", "")
+                if owner and handle == "unknown":
+                    handle = owner
+                
+                post_type = str(post_data.get("type", "Image")).lower()
+                if "video" in post_type or "reel" in post_type:
+                    media_type = "video"
+                
+                logger.info(f"[APIFY] Post: {post_metadata.get('likes_count')} likes, type={media_type}")
+                
+        except Exception as e:
+            logger.error(f"[APIFY] Post detail fetch failed: {e}")
+
+    # ══════════════════════════════════════════════════════
+    # Step 3: Analyze the post image/thumbnail with Groq Llama Scout
+    # ══════════════════════════════════════════════════════
+    visual_description = ""
+    content_type = "Lifestyle"
+    groq_api_key = os.environ.get("GROQ_API_KEY", "")
+    
+    if display_url and groq_api_key:
+        try:
+            logger.info("[GROQ] Analyzing post visual content")
+            
+            async with httpx.AsyncClient(timeout=15.0) as http_client:
+                img_resp = await http_client.get(display_url, headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Referer": "https://www.instagram.com/",
+                })
+                if img_resp.status_code == 200:
+                    image_b64 = base64.b64encode(img_resp.content).decode("utf-8")
+                    
+                    from openai import AsyncOpenAI
+                    groq_client = AsyncOpenAI(
+                        api_key=groq_api_key,
+                        base_url="https://api.groq.com/openai/v1",
+                    )
+                    
+                    vision_resp = await groq_client.chat.completions.create(
+                        model="meta-llama/llama-4-scout-17b-16e-instruct",
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "Analyze this Instagram post image for a Brand Manager. Describe: 1. What the image shows (people, products, scenery). 2. The content category (Beauty, Fashion, Comedy, Lifestyle, Food, Travel, etc). 3. Brand potential -- what types of brands would benefit from this content? Answer in 3-4 concise sentences."
+                                },
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}}
+                            ]
+                        }],
+                        max_tokens=300,
+                    )
+                    visual_description = vision_resp.choices[0].message.content or ""
+                    
+                    desc_lower = visual_description.lower()
+                    if any(w in desc_lower for w in ["beauty", "makeup", "skincare", "cosmetic"]):
+                        content_type = "Beauty"
+                    elif any(w in desc_lower for w in ["fashion", "outfit", "dress", "clothing", "style"]):
+                        content_type = "Fashion"
+                    elif any(w in desc_lower for w in ["comedy", "funny", "humor", "laugh"]):
+                        content_type = "Comedy"
+                    elif any(w in desc_lower for w in ["food", "cooking", "recipe", "restaurant"]):
+                        content_type = "Food"
+                    elif any(w in desc_lower for w in ["travel", "beach", "tourism", "destination"]):
+                        content_type = "Travel"
+                    
+                    logger.info(f"[GROQ] Visual analysis complete: {content_type}")
+        except Exception as e:
+            logger.error(f"[GROQ] Visual analysis failed: {e}")
+    
+    if not visual_description and post_metadata.get("caption"):
+        visual_description = f"Post caption: {post_metadata['caption'][:500]}"
+
+    # ══════════════════════════════════════════════════════
+    # Step 4: Analyze scraped comments using the pipeline's Agent Persona
+    # ══════════════════════════════════════════════════════
+    from azure_config import normalize_azure_endpoint
+    endpoint = normalize_azure_endpoint(os.environ.get("AZURE_OPENAI_ENDPOINT", ""))
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY", "")
+    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5.2-chat")
+    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2025-04-01-preview")
+
+    sentiment_data = {"positive": 0, "neutral": 100, "negative": 0, "avg_quality": 5, "toxicity_rate": 0, "total_comments": len(scraped_comments)}
+    context_insight = visual_description if visual_description else f"Instagram post by @{handle}. {len(scraped_comments)} comments were analyzed."
+    
+    if scraped_comments and endpoint and api_key:
+        try:
+            logger.info("[AGENT] Running pipeline Comment Analyst Agent on scraped comments")
+            
+            # Use the agent persona from sm_crew/src/sm_crew/config/post_agents.yaml
+            system_prompt = f"""Role: Data Analyst Senior en Intelligence Artificielle & Réseaux Sociaux (Spécialité Maghreb)
+Goal: Extraire des signaux clairs, objectifs et quantifiables (sentiments et qualité) à partir d'un échantillon de commentaires bruts pour l'influenceur {handle}.
+Backstory: Vous possédez plus de 10 ans d'expérience en NLP appliqué aux réseaux sociaux. Vous êtes bilingue et maîtrisez parfaitement les subtilités du dialecte tunisien (Darja), de l'Arabizi (franco-arabe) et des expressions culturelles maghrébines. Vous savez isoler le bruit des véritables signaux d'engagement. Votre jugement est purement analytique et impartial."""
+
+            comments_payload = [{"id": c["id"], "owner": c["ownerUsername"], "text": c["text"]} for c in scraped_comments]
+
+            user_prompt = f"""CONTEXTE : Vous évaluez l'engagement d'une publication de {handle} dont la légende est : "{post_metadata.get('caption', '')}".
+            
+VOICI LES COMMENTAIRES :
+{json.dumps(comments_payload, ensure_ascii=False)}
+
+OBJECTIFS D'ANALYSE :
+1. Sentiment Global : Calculez les pourcentages stricts (positive, negative, neutral) basés sur les commentaires fournis. (Somme = 100).
+2. Qualité de conversation globale : Attribuez une note moyenne sur 10 (avg_quality).
+3. Justification : Une brève explication analytique (context_insight) s'appuyant sur les expressions utilisées.
+4. Évaluation individuelle : Pour CHAQUE commentaire, déterminez son sentiment (positive/negative/neutral) et sa qualité (1-10).
+
+RÈGLES STRICTES :
+- Prenez en compte le sarcasme tunisien.
+- Retournez UNIQUEMENT un objet JSON valide, sans texte markdown autour.
+
+FORMAT JSON ATTENDU :
+{{
+  "overall": {{
+    "positive": 60,
+    "neutral": 30,
+    "negative": 10,
+    "avg_quality": 7.5,
+    "context_insight": "Explication analytique ici..."
+  }},
+  "comments_scored": [
+    {{"id": "id_du_commentaire", "sentiment": "positive", "quality_score": 8, "toxicity_flag": false}}
+  ]
+}}"""
+
+            from openai import AsyncAzureOpenAI
+            azure_client = AsyncAzureOpenAI(azure_endpoint=endpoint, api_key=api_key, api_version=api_version)
+            
+            resp = await azure_client.chat.completions.create(
+                model=deployment,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.1
+            )
+            
+            agent_result = json.loads(resp.choices[0].message.content)
+            
+            # Apply overall metrics
+            overall = agent_result.get("overall", {})
+            sentiment_data["positive"] = overall.get("positive", 0)
+            sentiment_data["neutral"] = overall.get("neutral", 0)
+            sentiment_data["negative"] = overall.get("negative", 0)
+            sentiment_data["avg_quality"] = overall.get("avg_quality", 5)
+            sentiment_data["toxicity_rate"] = overall.get("negative", 0)
+            context_insight = overall.get("context_insight", context_insight)
+            
+            # Apply individual comment scores
+            scores_map = {item["id"]: item for item in agent_result.get("comments_scored", [])}
+            for c in scraped_comments:
+                score_data = scores_map.get(c["id"], {})
+                c["sentiment"] = score_data.get("sentiment", "neutral")
+                c["quality_score"] = score_data.get("quality_score", 5)
+                c["toxicity_flag"] = score_data.get("toxicity_flag", False)
+                
+            logger.info("[AGENT] Comment analysis complete")
+        except Exception as e:
+            logger.error(f"[AGENT] Analysis failed: {e}")
+            # Fallback naive scoring if agent fails
+            for c in scraped_comments:
+                c["sentiment"] = "neutral"
+                c["quality_score"] = 5
+
+    langs: dict[str, int] = {}
+    for c in scraped_comments:
+        txt = c.get("text", "")
+        if not txt:
+            lang = "unknown"
+        elif re.search(r"[\u0600-\u06FF]", txt):
+            lang = "Arabic/Darija"
+        elif re.search(r"\b(je|de|le|la|les|un|une|est|pas|pour|avec|que|qui)\b", txt, re.I):
+            lang = "French"
+        elif re.search(r"\b(the|is|and|this|you|are|for|that|have|with)\b", txt, re.I):
+            lang = "English"
+        elif re.match(r"^[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F900-\U0001F9FF\U00002702-\U000027B0\U0000FE00-\U0000FE0F\U0000200D\s]+$", txt):
+            lang = "Emoji only"
         else:
-            messages = [{"role": "user", "content": fallback_prompt}]
-
-        response = await client.chat.completions.create(
-            model=deployment,
-            messages=messages,
-            max_completion_tokens=4000,
-        )
-        text = response.choices[0].message.content.strip()
-        if text.startswith("```"):
-            fence = re.search(r"```(?:json)?\s*\n?([\s\S]*?)\n?```", text)
-            if fence: text = fence.group(1).strip()
-        data = json.loads(text)
-    except Exception as e:
-        logger.error(f"AI analysis failed: {e}")
-        return {"error": str(e), "post_url": post_url}
-
-    try:
-        # Helper to avoid React "Objects as children" crash
-        def to_str(val):
-            if isinstance(val, dict): return " | ".join(f"{k}: {v}" for k, v in val.items())
-            if isinstance(val, list): return ", ".join(map(str, val))
-            return str(val or "")
-
-        enriched = data.get("enriched_content", "")
-        if isinstance(enriched, dict):
-            summary = enriched.get("caption_summary") or enriched.get("description") or ""
-            enriched = f"{summary}\n\nThemes: {to_str(enriched.get('themes', []))}"
-        else:
-            enriched = to_str(enriched)
-
-        final_handle = data.get("creator_handle", handle)
-        if not final_handle or final_handle == "unknown": final_handle = handle
-
-        comments = data.get("comments", [])
-        if not isinstance(comments, list): comments = []
+            lang = "Other"
         
-        # Standardize comments safely
-        safe_comments = []
-        for i, c in enumerate(comments):
-            if not isinstance(c, dict): continue
-            c["id"] = f"v_{i}"
-            c["likesCount"] = c.get("likesCount", 0)
-            c["repliesCount"] = c.get("repliesCount", 0)
-            c["owner"] = {"username": to_str(c.get("ownerUsername", "user"))}
-            safe_comments.append(c)
+        c["language"] = lang
+        langs[lang] = langs.get(lang, 0) + 1
+    
+    total_c = len(scraped_comments) or 1
+    language_breakdown = [
+        {"language": l, "count": cnt, "percentage": round(cnt / total_c * 100)}
+        for l, cnt in sorted(langs.items(), key=lambda x: -x[1])
+    ]
 
-        sentiment = _analyze_comments(safe_comments)
-        
-        langs: dict[str, int] = {}
-        for c in safe_comments:
-            l = to_str(c.get("language", "unknown"))
-            langs[l] = langs.get(l, 0) + 1
-        total = len(safe_comments) or 1
-        language_breakdown = [
-            {"language": l, "count": cnt, "percentage": round(cnt/total*100)}
-            for l, cnt in sorted(langs.items(), key=lambda x: -x[1])
-        ]
+    likes_count = post_metadata.get("likes_count", 0)
+    comments_count = post_metadata.get("comments_count", len(scraped_comments))
+    
+    context_insight = visual_description if visual_description else (
+        f"Instagram post by @{handle}. {len(scraped_comments)} comments were scraped and analyzed for sentiment."
+    )
 
-        return {
-            "post": {
-                "post_id": post_url,
-                "post_url": post_url,
-                "media_type": to_str(data.get("media_type", "image")),
-                "enriched_content": enriched,
-                "likes_count": data.get("likes_count", 0),
-                "comments_count": data.get("comments_count", 0),
-            },
-            "influencer": {"name": to_str(final_handle), "handle": to_str(final_handle)},
-            "content_type": to_str(data.get("content_type", "Lifestyle")),
-            "sentiment": sentiment,
-            "language_breakdown": language_breakdown,
-            "context_insight": to_str(data.get("context_insight", "")),
-            "comments": safe_comments,
-            "ai_generated": True,
-            "vision_used": screenshot_b64 is not None,
-            "is_simulated": screenshot_b64 is None
-        }
-    except Exception as e:
-        logger.error(f"Data processing failed: {e}")
-        return {"error": f"Parsing Error: {str(e)}", "post_url": post_url}
+    return {
+        "post": {
+            "post_id": post_url,
+            "post_url": post_url,
+            "display_url": display_url,
+            "media_type": media_type,
+            "enriched_content": visual_description or f"Post by @{handle}",
+            "likes_count": likes_count,
+            "comments_count": comments_count,
+            "caption": post_metadata.get("caption", ""),
+        },
+        "influencer": {"name": handle, "handle": handle},
+        "content_type": content_type,
+        "sentiment": sentiment_data,
+        "language_breakdown": language_breakdown,
+        "context_insight": context_insight,
+        "comments": scraped_comments,
+        "ai_generated": False,
+        "vision_used": bool(visual_description),
+        "is_simulated": False,
+        "comments_source": "apify" if scraped_comments else "none",
+    }
 
 
 @app.post("/api/match-product")
@@ -953,6 +1105,37 @@ def match_product_endpoint(req: ProductMatchRequest):
                 "fit_reason": "Based on audience profile and content domain analysis.",
             })
         return {"matches": fallback, "fallback": True, "error": str(e)}
+
+
+@app.get("/api/proxy-image")
+async def proxy_image(url: str):
+    """Proxy image requests to bypass CORS, with fallback for expired Instagram URLs."""
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+        "Referer": "https://www.instagram.com/",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(url, headers=headers)
+            
+            # If Instagram returns 4xx (likely URL Signature Expired), show a placeholder
+            if r.status_code != 200:
+                return RedirectResponse("https://placehold.co/600x400/1E1E2E/A6ADC8?text=Image+Expired")
+
+            content = r.content
+            media_type = r.headers.get("content-type", "image/jpeg")
+            
+        return Response(content=content, media_type=media_type)
+
+    except Exception as e:
+        logger.error(f"Failed to proxy image {url}: {e}")
+        # Return fallback on any exception
+        return RedirectResponse("https://placehold.co/600x400/1E1E2E/A6ADC8?text=Image+Expired")
 
 
 if __name__ == "__main__":

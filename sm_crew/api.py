@@ -18,26 +18,26 @@ app.add_middleware(
 async def proxy_image(url: str):
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
-    
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+        "Accept": "image/webp,image/apng,image/,/*;q=0.8",
         "Referer": "https://www.instagram.com/",
     }
-    
+
     try:
         # Fetch the entire image into memory first, then return it
         async with httpx.AsyncClient(timeout=15.0) as client:
             r = await client.get(url, headers=headers, follow_redirects=True)
             if r.status_code != 200:
                 raise HTTPException(status_code=r.status_code, detail="Image fetch failed")
-            
+
             content = r.content  # Read fully into memory
             media_type = r.headers.get("content-type", "image/jpeg")
-        
+
         from fastapi.responses import Response
         return Response(content=content, media_type=media_type)
-    
+
     except httpx.ReadError as e:
         raise HTTPException(status_code=502, detail=f"Read error fetching image: {str(e)}")
     except httpx.TimeoutException:
